@@ -1,9 +1,9 @@
 import {HumanMessage} from '@langchain/core/messages';
 import {ChatGoogleGenerativeAI} from '@langchain/google-genai';
 import {HarmBlockThreshold, HarmCategory} from '@google/generative-ai';
-import Base64 from 'base64-js';
+
 import MarkdownIt from 'markdown-it';
-import {maybeShowApiKeyBanner} from './gemini-api-banner';
+
 import './style.css';
 
 // 🔥 SET `GOOGLE_API_KEY` IN YOUR .env FILE! 🔥
