@@ -91,6 +91,7 @@ form.onsubmit = async ev => {
 
     const vision = new ChatGoogleGenerativeAI({
       modelName: 'gemini-1.5-flash',
+      apiKey: import.meta.env.VITE_GOOGLE_API_KEY,
       safetySettings: [
         {
           category: HarmCategory.HARM_CATEGORY_HARASSMENT,
