@@ -91,7 +91,7 @@
       }
 
       // Caricamento dei dati dei terremoti
-      fetch('events25.json')
+      fetch('../events25.json')
         .then(response => response.json())
         .then(data => {
           if (!Array.isArray(data)) {
