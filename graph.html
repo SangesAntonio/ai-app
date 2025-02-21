@@ -4,124 +4,89 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Visualizzazione Terremoti 3D</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-</head>
-<body style="margin: 0; overflow: hidden;">
-    <script>
-        // Creazione della scena
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(renderer.domElement);
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
-        // Luce ambientale
-        const light = new THREE.AmbientLight(0xffffff, 1.2);
-        scene.add(light);
+        document.addEventListener("DOMContentLoaded", () => {
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.getElementById("graficoContainer").appendChild(renderer.domElement);
 
-        // Griglia di riferimento
-        const gridHelper = new THREE.GridHelper(50, 50);
-        scene.add(gridHelper);
+            // Controlli orbitali
+            const controls = new OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
 
-        // Scala per trasformare coordinate geografiche in 3D
-        function latLonToXYZ(lat, lon, depth) {
-            const scale = 10;
-            const x = (lon - 10) * scale;
-            const y = (lat - 40) * scale;
-            const z = -depth * 2;
-            return { x, y, z };
-        }
+            // Luce ambientale
+            const light = new THREE.AmbientLight(0xffffff, 1.2);
+            scene.add(light);
 
-        // Funzione per ottenere la magnitudo più alta
-        function getMagnitudo(earthquake) {
-            if (earthquake.magnitudos && Array.isArray(earthquake.magnitudos) && earthquake.magnitudos.length > 0) {
-                return earthquake.magnitudos[0].value || 1;
+            // Griglia
+            const gridHelper = new THREE.GridHelper(50, 50, 0xffffff, 0xffffff);
+            scene.add(gridHelper);
+
+            function latLonToXYZ(lat, lon, depth) {
+                const scale = 10;
+                return { x: (lon - 10) * scale, y: (lat - 40) * scale, z: -depth * 2 };
             }
-            return 1;
-        }
 
-        // Funzione per verificare se le coordinate sono valide
-        function isValidCoordinate(lat, lon, depth) {
-            return !isNaN(lat) && !isNaN(lon) && !isNaN(depth) && 
-                   lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180;
-        }
+            function getMagnitudo(earthquake) {
+                return earthquake.magnitudos?.[0]?.value || 1;
+            }
 
-        // Caricare il file JSON
-        fetch('events25.json')
-            .then(response => response.json())
-            .then(data => {
-               // console.log("Dati ricevuti:", data);
+            function isValidCoordinate(lat, lon, depth) {
+                return !isNaN(lat) && !isNaN(lon) && !isNaN(depth) && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180;
+            }
 
-                // Se i dati non sono in formato array, logga errore
-                if (!Array.isArray(data)) {
-                    console.error("Errore: Il JSON non è un array.");
-                    return;
-                }
-
-                data.forEach(eq => {
-                    const { latitude, longitude, depth } = eq.location;
-
-                    // Log dei dati per diagnosi
-                    //console.log(`Elaborando terremoto ID ${eq.id} con latitudine: ${latitude}, longitudine: ${longitude}, profondità: ${depth}`);
-
-                    // Verifica se i dati sono validi
-                    if (!isValidCoordinate(latitude, longitude, depth)) {
-                        console.warn(`Dati non validi per il terremoto ID ${eq.id}: latitude=${latitude}, longitude=${longitude}, depth=${depth}`);
-                        return; // Ignora questo terremoto
+            fetch('events25.json')
+                .then(response => response.json())
+                .then(data => {
+                    if (!Array.isArray(data)) {
+                        console.error("Errore: Il JSON non è un array.");
+                        return;
                     }
 
-                    // Se i dati sono validi, procedi con la conversione delle coordinate
-                    const { x, y, z } = latLonToXYZ(latitude, longitude, depth);
-                    
-                    // Log delle coordinate calcolate
-                    //console.log(`Coordinate calcolate per il terremoto ID ${eq.id}: x=${x}, y=${y}, z=${z}`);
+                    data.forEach(eq => {
+                        const { latitude, longitude, depth } = eq.location;
+                        if (!isValidCoordinate(latitude, longitude, depth)) return;
 
-                    // Verifica che le coordinate risultanti non siano NaN
-                    if (isNaN(x) || isNaN(y) || isNaN(z)) {
-                        console.warn(`Coordinate non valide per il terremoto ID ${eq.id}: x=${x}, y=${y}, z=${z}`);
-                        return; // Ignora questo terremoto
-                    }
+                        const { x, y, z } = latLonToXYZ(latitude, longitude, depth);
+                        if (isNaN(x) || isNaN(y) || isNaN(z)) return;
 
-                    const magnitudo = getMagnitudo(eq);
+                        const magnitudo = getMagnitudo(eq);
+                        if (magnitudo <= 0) return;
 
-                    // Aggiungi controllo sulla magnitudo
-                    if (magnitudo <= 0) {
-                        console.warn(`Magnitudo non valida per il terremoto ID ${eq.id}: ${magnitudo}`);
-                        return; // Ignora questo terremoto
-                    }
+                        let luminosita = Math.max(0, Math.min(100, 100 - depth * 5));
+                        const color = new THREE.Color(`hsl(0, 100%, ${luminosita}%)`);
 
-                    // Calcolare la luminosità (limitarla tra 0 e 100)
-                    let luminosita = 100 - depth * 5;
-                    luminosita = Math.max(0, Math.min(luminosita, 100));  // Limita la luminosità tra 0 e 100
+                        const geometry = new THREE.SphereGeometry(magnitudo * 0.5);
+                        const material = new THREE.MeshBasicMaterial({ color });
+                        const sphere = new THREE.Mesh(geometry, material);
+                        sphere.position.set(x, y, z);
 
-                    // Log della luminosità calcolata
-                    //console.log(`Luminosità calcolata per il terremoto ID ${eq.id}: ${luminosita}`);
+                        scene.add(sphere);
+                    });
+                })
+                .catch(error => console.error("Errore nel caricamento del JSON:", error));
 
-                    // Determina il colore in base alla profondità
-                    const color = new THREE.Color(`hsl(0, 100%, ${luminosita}%)`);
+            camera.position.set(0, 30, 50);
 
-                    // Creiamo una sfera per rappresentare il terremoto
-                    const geometry = new THREE.SphereGeometry(magnitudo * 0.5); // Scala in base alla magnitudo
-                    //console.log(`Creando sfera con geometria per il terremoto ID ${eq.id}: radius=${magnitudo * 0.5}`);
-                    const material = new THREE.MeshBasicMaterial({ color: color });
-                    const sphere = new THREE.Mesh(geometry, material);
-                    sphere.position.set(x, y, z);
-
-                    // Aggiungiamo la sfera alla scena
-                    scene.add(sphere);
-                });
-            })
-            .catch(error => console.error("Errore nel caricamento del JSON:", error));
-
-        // Posizione iniziale della camera
-        camera.position.set(0, 30, 50);
-
-        // Animazione
-        function animate() {
-            requestAnimationFrame(animate);
-            renderer.render(scene, camera);
-        }
-        animate();
+            function animate() {
+                requestAnimationFrame(animate);
+                controls.update();
+                renderer.render(scene, camera);
+            }
+            animate();
+        });
     </script>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: white; }
+        #graficoContainer { width: 100vw; height: 100vh; }
+    </style>
+</head>
+<body>
+    <div id="graficoContainer"></div>
 </body>
 </html>
