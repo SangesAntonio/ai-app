@@ -29,7 +29,7 @@ const handleButtonClick = (style, textPrefix) => {
 
 affettuoso.addEventListener('click', () => {
   handleButtonClick(
-    "Scrivi un messaggio  affettuoso e gentile, aggiungendo un pizzico di simpatia come se fosse un messaggio per un membro della famiglia a cui si vuole molto bene, Fornisci solo il messaggio di seguito modificato. ",
+    "Scrivi un messaggio  affettuoso e gentile, aggiungendo un pizzico di simpatia come se fosse un messaggio per un membro della famiglia a cui si vuole bene, Fornisci solo il messaggio di seguito modificato. ",
     "Gentile utente,"
   );
 });
