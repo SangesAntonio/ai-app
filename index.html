@@ -1,141 +1,37 @@
-<!DOCTYPE html>
-<html lang="it">
+<!doctype html>
+<html lang="en">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Visualizzazione Terremoti 3D</title>
-  <style>
-    body { margin: 0; overflow: hidden; background-color: white; }
-    #graficoContainer { width: 100vw; height: 100vh; }
-  </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Divertiti with the Gemini API</title>
 </head>
+
 <body>
-  <div id="graficoContainer"></div>
-  <script type="module">
-    import * as THREE from 'three';
-    import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+  <main>
+    <h1>Ciao, scrivimi il tuo messaggio e io lo modificherò a seconda della tua scelta!</h1>
+    <i class="signature"><u>Made by sanges.inc <a href="graph.html">GRAFICI</a></u></i>
 
-    document.addEventListener("DOMContentLoaded", () => {
-      // Creazione della scena con sfondo bianco
-      const scene = new THREE.Scene();
-      scene.background = new THREE.Color(0xDDffff);
+    <form>
+        <div class="prompt-box">
+            <label>
+                <textarea id="input-text" placeholder="Scrivi qui il tuo messaggio..."></textarea>
+            </label>
+        </div>
+        <i class="signature"><u>Con l'aiuto di Gemini</u></i>
 
-      const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-      const renderer = new THREE.WebGLRenderer({ antialias: true });
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      renderer.setClearColor(0xffffff, 1);
-      document.getElementById("graficoContainer").appendChild(renderer.domElement);
-
-      const controls = new OrbitControls(camera, renderer.domElement);
-      controls.enableDamping = true;
-
-      // Griglia sul piano XZ (più piccola)
-      const gridSize = 50;
-      const gridDivisions = 5;
-      const gridHelper = new THREE.GridHelper(gridSize, gridDivisions, 0x000000, 0x000000);
-      scene.add(gridHelper);
-
-      // Impostiamo i parametri per la linea di profondità
-      const maxDepth = 8;      // profondità massima in km
-      const depthScale = 2;    // 1 km corrisponde a 2 unità lungo l'asse y
-
-      // Creazione della linea verticale per la profondità (da y=0 a y = -maxDepth*depthScale)
-      const depthLineGeometry = new THREE.BufferGeometry().setFromPoints([
-        new THREE.Vector3(0, 0, 0),
-        new THREE.Vector3(0, -maxDepth * depthScale, 0)
-      ]);
-      const depthLineMaterial = new THREE.LineBasicMaterial({ color: 0x000000 });
-      const depthLine = new THREE.Line(depthLineGeometry, depthLineMaterial);
-      scene.add(depthLine);
-
-      // Funzione per aggiungere un tick mark orizzontale
-      function addTickMark(y, tickLength = 2) {
-        const halfTick = tickLength / 2;
-        const tickGeometry = new THREE.BufferGeometry().setFromPoints([
-          new THREE.Vector3(-halfTick, y, 0),
-          new THREE.Vector3(halfTick, y, 0)
-        ]);
-        const tickMaterial = new THREE.LineBasicMaterial({ color: 0x000000 });
-        const tick = new THREE.Line(tickGeometry, tickMaterial);
-        scene.add(tick);
-      }
-
-      // Aggiungiamo tick marks ogni 1 km (ossia ogni depthScale unità in y)
-      for (let i = 0; i <= maxDepth; i++) {
-        const y = - i * depthScale;
-        addTickMark(y);
-      }
-
-      // Impostazione del centro della mappa:
-      // Consideriamo lat=40 e lon=10 come centro, che verranno mappati su (0,0,0)
-      const centerLat = 40;
-      const centerLon = 15;
-
-      // Funzione per convertire latitudine, longitudine e profondità (in km) in coordinate 3D
-      function latLonToXYZ(lat, lon, depth) {
-        const scale = 10;
-        return {
-          x: (lon - centerLon) * scale,
-          y: -depth * depthScale, // Utilizza depthScale per mantenere la proporzionalità
-          z: (lat - centerLat) * scale
-        };
-      }
-
-      function isValidCoordinate(lat, lon, depth) {
-        return !isNaN(lat) && !isNaN(lon) && !isNaN(depth) &&
-               lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180;
-      }
-
-      function getMagnitude(earthquake) {
-        return earthquake.magnitudos?.[0]?.value || 1;
-      }
-
-      // Caricamento dei dati dei terremoti
-      fetch('events25.json')
-        .then(response => response.json())
-        .then(data => {
-          if (!Array.isArray(data)) {
-            console.error("Errore: Il JSON non è un array.");
-            return;
-          }
-
-          data.forEach(eq => {
-            const { latitude, longitude, depth } = eq.location;
-            if (!isValidCoordinate(latitude, longitude, depth)) return;
-
-            const { x, y, z } = latLonToXYZ(latitude, longitude, depth);
-            if (isNaN(x) || isNaN(y) || isNaN(z)) return;
-
-            const magnitude = getMagnitude(eq);
-            if (magnitude <= 0) return;
-
-            // Calcola il colore: di base giallo che diventa più rosso con l'aumentare della magnitudo
-            let factor = (magnitude - 1) / (5 - 1);
-            factor = Math.max(0, Math.min(1, factor));
-            const yellow = new THREE.Color(0x6397d0);
-            const red = new THREE.Color(0xff0000);
-            const color = yellow.clone().lerp(red, factor);
+        <div id="button-container">
+            <button id="formal-button">Formale</button>
+            <button id="informal-button">Informale</button>
+            <button id="scherzoso-button">Scherzoso</button>
             
+        </div>
+    </form>
 
-            const geometry = new THREE.SphereGeometry(magnitude * 0.5, 16, 16);
-            const material = new THREE.MeshBasicMaterial({ color });
-            const sphere = new THREE.Mesh(geometry, material);
-            sphere.position.set(x, y, z);
-            scene.add(sphere);
-          });
-        })
-        .catch(error => console.error("Errore nel caricamento del JSON:", error));
+    <p class="output">(Il tuo messaggio uscirà qui..)</p>
+</main>
 
-      camera.position.set(30, 30, 30);
-      camera.lookAt(0, 0, 0);
-
-      function animate() {
-        requestAnimationFrame(animate);
-        controls.update();
-        renderer.render(scene, camera);
-      }
-      animate();
-    });
-  </script>
+  <script type="module" src="/main.js"></script>
 </body>
+
 </html>
