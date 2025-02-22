@@ -1,4 +1,9 @@
+import {defineConfig, loadEnv} from 'vite'
+
+
 export default defineConfig({
-  
-  publicDir: 'public', // Assicurati che questa riga sia presente
+  build: {
+    outDir: 'dist',
+  },
+  publicDir: 'public',
 });
