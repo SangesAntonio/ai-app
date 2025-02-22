@@ -16,7 +16,7 @@ const inputText = document.getElementById('input-text'); // Prendo la textarea
 const formal = document.getElementById('formal-button');
 const informal = document.getElementById('informal-button'); // Corretto ID
 const funny = document.getElementById('scherzoso-button'); // Corretto ID
-const affettuoso = document.getElementById('affettuoso-button'); // Corretto ID
+
 
 const output = document.querySelector('.output');
 let promptStyle = '';
@@ -27,12 +27,7 @@ const handleButtonClick = (style, textPrefix) => {
   form.requestSubmit(); // Attiva la submit con l'evento onsubmit
 };
 
-affettuoso.addEventListener('click', () => {
-  handleButtonClick(
-    "Scrivi un messaggio  affettuoso e gentile, aggiungendo un pizzico di simpatia come se fosse un messaggio per un membro della famiglia a cui si vuole bene, Fornisci solo il messaggio di seguito modificato. ",
-    "Gentile utente,"
-  );
-});
+
 
 formal.addEventListener('click', () => {
   handleButtonClick(
