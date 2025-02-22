@@ -11,6 +11,10 @@
 </head>
 <body>
   <div id="graficoContainer"></div>
+  <div style="position: absolute; top: 10px; left: 10px; background: rgba(255,255,255,0.8); padding: 10px; border-radius: 5px;">
+    <label for="sizeSlider">Grandezza sfere:</label>
+    <input type="range" id="sizeSlider" min="0.1" max="5" step="0.1" value="1">
+  </div>
   <script type="module">
    
     
@@ -38,8 +42,8 @@ import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
       controls.enableDamping = true;
 
       // Griglia sul piano XZ (più piccola)
-      const gridSize = 50;
-      const gridDivisions = 5;
+      const gridSize = 25;
+      const gridDivisions = 2;
       const gridHelper = new THREE.GridHelper(gridSize, gridDivisions, 0x000000, 0x000000);
       scene.add(gridHelper);
 
@@ -57,27 +61,50 @@ import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
       scene.add(depthLine);
 
       // Funzione per aggiungere un tick mark orizzontale
-      function addTickMark(y, tickLength = 2) {
-        const halfTick = tickLength / 2;
-        const tickGeometry = new THREE.BufferGeometry().setFromPoints([
-          new THREE.Vector3(-halfTick, y, 0),
-          new THREE.Vector3(halfTick, y, 0)
-        ]);
-        const tickMaterial = new THREE.LineBasicMaterial({ color: 0x000000 });
-        const tick = new THREE.Line(tickGeometry, tickMaterial);
-        scene.add(tick);
-      }
+      // Carica il font prima di creare i tick mark
+const loaderTre = new FontLoader();
+loaderTre.load('fonts/helvetiker_regular.typeface.json', (font) => {
 
-      // Aggiungiamo tick marks ogni 1 km (ossia ogni depthScale unità in y)
-      for (let i = 0; i <= maxDepth; i++) {
-        const y = - i * depthScale;
-        addTickMark(y);
-      }
+  function addTickMark(y, index, tickLength = 2) {
+    const halfTick = tickLength / 2;
 
+    // Creazione della linea orizzontale
+    const tickGeometry = new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(-halfTick, y, 0),
+      new THREE.Vector3(halfTick, y, 0)
+    ]);
+    const tickMaterial = new THREE.LineBasicMaterial({ color: 0x000000 });
+    const tick = new THREE.Line(tickGeometry, tickMaterial);
+    scene.add(tick);
+
+    // Non mostrare il numero sulla prima linea (superficie)
+    if (index > 1) {
+      // Creazione del numero accanto alla linea
+      const textGeometry = new TextGeometry((index - 1).toString(), {
+        font: font,
+        size: 0.8,      // Dimensione del numero
+        height: 0.1,
+        depth:0.1  // Profondità minima per il testo 3D
+      });
+      const textMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
+      const textMesh = new THREE.Mesh(textGeometry, textMaterial);
+
+      // Posizioniamo il numero accanto al tick mark
+      textMesh.position.set(halfTick + 1, y, 0);
+      scene.add(textMesh);
+    }
+  }
+
+  // Creiamo i tick mark numerati (partendo da 2 invece che 1)
+  for (let i = 0; i <= maxDepth; i++) {
+    const y = -i * depthScale;
+    addTickMark(y, i + 1); // Il numero 1 viene ignorato e la numerazione parte da 2
+  }
+});
       // Impostazione del centro della mappa:
       // Consideriamo lat=40 e lon=10 come centro, che verranno mappati su (0,0,0)
-      const centerLat = 40;
-      const centerLon = 15;
+      const centerLat = 41;
+      const centerLon = 14;
 
       // Funzione per convertire latitudine, longitudine e profondità (in km) in coordinate 3D
       function latLonToXYZ(lat, lon, depth) {
@@ -100,20 +127,20 @@ import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
       // Carica il font (assicurati di avere il file font corretto nella cartella indicata)
       const loader = new FontLoader();
       loader.load('fonts/helvetiker_regular.typeface.json', (font) => {
-  const textGeometry = new TextGeometry('Terremoti Campi flegrei', {
-    font: font,
-    size: 8,          // dimensione complessiva ridotta
-    height: 5,      // profondità ridotta (ulteriore riduzione del 90% rispetto a 0.05 ad esempio)
-    curveSegments: 12,
-    bevelEnabled: true,
-    bevelThickness: 0.001,
-    bevelSize: 0.001,
-    bevelOffset: 0,
-    bevelSegments: 3,
-    depth:0.9
-  });
-  const textMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
-  const textMesh = new THREE.Mesh(textGeometry, textMaterial);
+      const textGeometry = new TextGeometry('Terremoti Campi flegrei', {
+        font: font,
+        size: 6,          // dimensione complessiva ridotta
+        height: 5,      // profondità ridotta (ulteriore riduzione del 90% rispetto a 0.05 ad esempio)
+        curveSegments: 12,
+        bevelEnabled: true,
+        bevelThickness: 0.001,
+        bevelSize: 0.001,
+        bevelOffset: 0,
+        bevelSegments: 3,
+        depth:0.2
+      });
+      const textMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
+      const textMesh = new THREE.Mesh(textGeometry, textMaterial);
 
   // Se serve, applica un'ulteriore scala per ridurre ulteriormente la dimensione
   textMesh.scale.set(0.5, 0.5, 0.5);
@@ -122,10 +149,10 @@ import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
   textMesh.rotation.x = - Math.PI / 2;
 
   // Posiziona la scritta dove desideri, ad esempio vicino al bordo della griglia
-  textMesh.position.set(-25, 0, -25);
+  textMesh.position.set(-25, 0, -15);
   scene.add(textMesh);
 });
-
+let spheres = [];
       // Caricamento dei dati dei terremoti
       fetch('events25.json')
         .then(response => response.json())
@@ -153,16 +180,26 @@ import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
             const color = yellow.clone().lerp(red, factor);
             
 
-            const geometry = new THREE.SphereGeometry(magnitude * 0.5, 16, 16);
+            const geometry = new THREE.SphereGeometry(magnitude * 0.01, 16, 16);
             const material = new THREE.MeshBasicMaterial({ color });
             const sphere = new THREE.Mesh(geometry, material);
             sphere.position.set(x, y, z);
             scene.add(sphere);
+            spheres.push(sphere); // Salviamo la sfera nell'array
+            
           });
         })
+        
         .catch(error => console.error("Errore nel caricamento del JSON:", error));
+        document.getElementById("sizeSlider").addEventListener("input", (event) => {
+          const scaleFactor = parseFloat(event.target.value);
+          
+          spheres.forEach(sphere => {
+            sphere.scale.set(scaleFactor, scaleFactor, scaleFactor);
+          });
+        });
 
-      camera.position.set(30, 30, 30);
+      camera.position.set(5, 3, 5);
       camera.lookAt(0, 0, 0);
 
       function animate() {
@@ -172,6 +209,9 @@ import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
       }
       animate();
     });
+
+    
+    
   </script>
 </body>
 </html>
