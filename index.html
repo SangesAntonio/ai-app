@@ -13,7 +13,11 @@
   <div id="graficoContainer"></div>
   <div style="position: absolute; top: 10px; left: 10px; background: rgba(255,255,255,0.8); padding: 10px; border-radius: 5px;">
     <label for="sizeSlider">Grandezza sfere:</label>
-    <input type="range" id="sizeSlider" min="0.1" max="5" step="0.1" value="1">
+    <input type="range" id="sizeSlider" min="0.1" max="5" step="0.1" value="1"><br>
+    <span style="color:rgb(162, 165, 0)">Giallo: Solfatara</span><br>
+    <span style="color:rgb(0, 165, 11)">Verde: Montenuovo</span>
+  </div>
+  <div>
   </div>
   <script type="module">
    
@@ -22,15 +26,16 @@
     import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
     import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
-import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
+    import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
 
+    import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+    import { TextureLoader } from 'three';
 
-    
-    
     document.addEventListener("DOMContentLoaded", () => {
       // Creazione della scena con sfondo bianco
       const scene = new THREE.Scene();
       scene.background = new THREE.Color(0xDDffff);
+      
 
       const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
       const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -40,12 +45,91 @@ import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
 
       const controls = new OrbitControls(camera, renderer.domElement);
       controls.enableDamping = true;
+      
+      const pyramidLat = 40.8269;
+      const pyramidLon = 14.1405;
+      const pyramidDepth = 0;
+      
+      // Convertiamo le coordinate in 3D
+      const pyramidPos = latLonToXYZ(pyramidLat, pyramidLon, pyramidDepth);
+      const pyramidSecondPos = latLonToXYZ(40.8352, 14.0877,0);
+      
+      controls.target.set(pyramidPos.z, pyramidPos.y, pyramidPos.x);
 
-      // Griglia sul piano XZ (più piccola)
+      // Creazione della griglia
       const gridSize = 25;
-      const gridDivisions = 2;
+      const gridDivisions = 5;
       const gridHelper = new THREE.GridHelper(gridSize, gridDivisions, 0x000000, 0x000000);
+
+      // Sposta la griglia al centro della piramide
+      gridHelper.position.set(pyramidPos.z, pyramidPos.y, pyramidPos.x);
+
       scene.add(gridHelper);
+
+      // Aggiunta della luce
+      const light = new THREE.AmbientLight(0xffffff, 2);
+      scene.add(light);
+
+      // Funzione per caricare il modello 3D con texture
+      function load3DModel(modelPath, texturePath, position, scale) {
+        const loader = new GLTFLoader();
+        const textureLoader = new TextureLoader();
+
+        loader.load(modelPath, (gltf) => {
+          const model = gltf.scene;
+          console.log("Modello caricato:", model);
+
+          // Carica la texture
+          const textureLoader = new THREE.TextureLoader();
+const texture = textureLoader.load(texturePath, () => {
+  console.log("Texture caricata con successo");
+
+  // Imposta la ripetizione della texture
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(4, 4); // Modifica questi valori per adattare la texture
+});
+
+        // Applica la texture a tutte le mesh
+        model.traverse((child) => {
+          if (child.isMesh) {
+            child.material = new THREE.MeshStandardMaterial({
+              map: texture,
+              side: THREE.DoubleSide,
+            });
+          }
+        });
+
+
+          // Forza una posizione visibile
+          model.traverse((child) => {
+  if (child.isMesh) {
+    child.rotation.x = Math.PI; // Ruota ogni mesh individualmente
+  }
+});
+
+          model.scale.set(scale, scale, scale);
+          model.position.set(position.x, position.y, position.z);
+          scene.add(model);
+        }, undefined, (error) => {
+          console.error("Errore nel caricamento del modello 3D:", error);
+        });
+      }
+
+      // Percorsi dei file (assicurati che siano corretti)
+      const modelPath = '/3dmodels/scene.gltf';
+      const texturePath = '/3dmodels/textures/TerrainNodeMaterial_baseColor.jpeg';
+
+      // Carichiamo il modello nella posizione della piramide
+     // load3DModel(modelPath, texturePath, pyramidPos, -0.1);
+
+      function animate() {
+        requestAnimationFrame(animate);
+        controls.update();
+        renderer.render(scene, camera);
+      }
+      animate();
+
 
       // Impostiamo i parametri per la linea di profondità
       const maxDepth = 8;      // profondità massima in km
@@ -59,6 +143,7 @@ import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
       const depthLineMaterial = new THREE.LineBasicMaterial({ color: 0x000000 });
       const depthLine = new THREE.Line(depthLineGeometry, depthLineMaterial);
       scene.add(depthLine);
+      depthLine.position.set(pyramidPos.z, pyramidPos.y, pyramidPos.x);
 
       // Funzione per aggiungere un tick mark orizzontale
       // Carica il font prima di creare i tick mark
@@ -76,6 +161,7 @@ loaderTre.load('fonts/helvetiker_regular.typeface.json', (font) => {
     const tickMaterial = new THREE.LineBasicMaterial({ color: 0x000000 });
     const tick = new THREE.Line(tickGeometry, tickMaterial);
     scene.add(tick);
+    tick.position.set(pyramidPos.z, pyramidPos.y, pyramidPos.x);
 
     // Non mostrare il numero sulla prima linea (superficie)
     if (index > 1) {
@@ -90,8 +176,9 @@ loaderTre.load('fonts/helvetiker_regular.typeface.json', (font) => {
       const textMesh = new THREE.Mesh(textGeometry, textMaterial);
 
       // Posizioniamo il numero accanto al tick mark
-      textMesh.position.set(halfTick + 1, y, 0);
-      scene.add(textMesh);
+      //textMesh.position.set(halfTick + 1, y, 0);
+      //scene.add(textMesh);
+      //textMesh.position.set(halfTick + 1, pyramidPos.y, pyramidPos.x);
     }
   }
 
@@ -103,18 +190,24 @@ loaderTre.load('fonts/helvetiker_regular.typeface.json', (font) => {
 });
       // Impostazione del centro della mappa:
       // Consideriamo lat=40 e lon=10 come centro, che verranno mappati su (0,0,0)
-      const centerLat = 41;
-      const centerLon = 14;
+     
 
       // Funzione per convertire latitudine, longitudine e profondità (in km) in coordinate 3D
       function latLonToXYZ(lat, lon, depth) {
-        const scale = 10;
+        // Definisci un fattore di scala per rendere le coordinate proporzionali alla profondità
+        const depthScale = 2;  // 1 km = 2 unità Three.js (aggiustabile)
+        const latLonScale = 100; // Scala per lat/lon per renderli coerenti (regolabile)
+
+        const centerLat = 40;
+        const centerLon = 15;
+
         return {
-          x: (lon - centerLon) * scale,
-          y: -depth * depthScale, // Utilizza depthScale per mantenere la proporzionalità
-          z: (lat - centerLat) * scale
+          x: (lon - centerLon) * latLonScale,
+          y: -depth * depthScale,  // Profondità proporzionale
+          z: (lat - centerLat) * latLonScale
         };
       }
+
 
       function isValidCoordinate(lat, lon, depth) {
         return !isNaN(lat) && !isNaN(lon) && !isNaN(depth) &&
@@ -142,17 +235,44 @@ loaderTre.load('fonts/helvetiker_regular.typeface.json', (font) => {
       const textMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
       const textMesh = new THREE.Mesh(textGeometry, textMaterial);
 
-  // Se serve, applica un'ulteriore scala per ridurre ulteriormente la dimensione
-  textMesh.scale.set(0.5, 0.5, 0.5);
+      // Se serve, applica un'ulteriore scala per ridurre ulteriormente la dimensione
+      textMesh.scale.set(0.5, 0.5, 0.5);
 
-  // Ruota la scritta in modo che l'estrusione segua l'asse Y (orientata verso l'alto)
-  textMesh.rotation.x = - Math.PI / 2;
+      // Ruota la scritta in modo che l'estrusione segua l'asse Y (orientata verso l'alto)
+      textMesh.rotation.x = - Math.PI / 2;
 
-  // Posiziona la scritta dove desideri, ad esempio vicino al bordo della griglia
-  textMesh.position.set(-25, 0, -15);
-  scene.add(textMesh);
-});
-let spheres = [];
+      // Posiziona la scritta dove desideri, ad esempio vicino al bordo della griglia
+      textMesh.position.set(-20, 0, -15);
+      scene.add(textMesh);
+      textMesh.position.set(pyramidPos.z-25, pyramidPos.y, pyramidPos.x+18);
+      
+    });
+
+      function addPyramid(lat, lon, depth, color) {
+          // Converti le coordinate geografiche in coordinate 3D
+          const { x, y, z } = latLonToXYZ(lat, lon, depth);
+
+          // Geometria della piramide (Tetraedro)
+          const pyramidGeometry = new THREE.ConeGeometry(0.1, 0.4, 4); // Base 2, altezza 4, 4 lati
+          const pyramidMaterial = new THREE.MeshBasicMaterial({ color: new THREE.Color(color), wireframe: false });
+          const pyramid = new THREE.Mesh(pyramidGeometry, pyramidMaterial);
+
+          // Posizioniamo la piramide
+          pyramid.position.set(z, y, x);
+
+          // Ruotiamo la piramide per allinearla meglio
+          pyramid.rotation.y = Math.PI / 4; // Rotazione di 45° per farla sembrare più bilanciata
+
+          // Aggiungiamo la piramide alla scena
+          scene.add(pyramid);
+        
+      }
+
+      // Aggiungi una piramide con un colore specifico
+    
+      addPyramid(40.8269, 14.1405, 0,0xEEff00); // giallo solfatara
+      addPyramid(40.8352, 14.0877, 0,0x00ff00); // verde montenuovo
+      let spheres = [];
       // Caricamento dei dati dei terremoti
       fetch('events25.json')
         .then(response => response.json())
@@ -183,7 +303,8 @@ let spheres = [];
             const geometry = new THREE.SphereGeometry(magnitude * 0.01, 16, 16);
             const material = new THREE.MeshBasicMaterial({ color });
             const sphere = new THREE.Mesh(geometry, material);
-            sphere.position.set(x, y, z);
+            sphere.position.set(z, y, x);
+            //console.log(x,y,z)
             scene.add(sphere);
             spheres.push(sphere); // Salviamo la sfera nell'array
             
@@ -199,8 +320,9 @@ let spheres = [];
           });
         });
 
-      camera.position.set(5, 3, 5);
-      camera.lookAt(0, 0, 0);
+      camera.position.set(pyramidPos.z,3, pyramidPos.x);
+      camera.lookAt(pyramidPos.z, pyramidPos.y, pyramidPos.x);
+      console.log(pyramidPos.z, pyramidPos.y, pyramidPos.x)
 
       function animate() {
         requestAnimationFrame(animate);
