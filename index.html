@@ -17,6 +17,12 @@
     import * as THREE from 'three';
     import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
+    import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
+import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
+
+
+    
+    
     document.addEventListener("DOMContentLoaded", () => {
       // Creazione della scena con sfondo bianco
       const scene = new THREE.Scene();
@@ -91,6 +97,34 @@
       function getMagnitude(earthquake) {
         return earthquake.magnitudos?.[0]?.value || 1;
       }
+      // Carica il font (assicurati di avere il file font corretto nella cartella indicata)
+      const loader = new FontLoader();
+      loader.load('fonts/helvetiker_regular.typeface.json', (font) => {
+  const textGeometry = new TextGeometry('Terremoti Campi flegrei', {
+    font: font,
+    size: 8,          // dimensione complessiva ridotta
+    height: 5,      // profondità ridotta (ulteriore riduzione del 90% rispetto a 0.05 ad esempio)
+    curveSegments: 12,
+    bevelEnabled: true,
+    bevelThickness: 0.001,
+    bevelSize: 0.001,
+    bevelOffset: 0,
+    bevelSegments: 3,
+    depth:0.9
+  });
+  const textMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
+  const textMesh = new THREE.Mesh(textGeometry, textMaterial);
+
+  // Se serve, applica un'ulteriore scala per ridurre ulteriormente la dimensione
+  textMesh.scale.set(0.5, 0.5, 0.5);
+
+  // Ruota la scritta in modo che l'estrusione segua l'asse Y (orientata verso l'alto)
+  textMesh.rotation.x = - Math.PI / 2;
+
+  // Posiziona la scritta dove desideri, ad esempio vicino al bordo della griglia
+  textMesh.position.set(-25, 0, -25);
+  scene.add(textMesh);
+});
 
       // Caricamento dei dati dei terremoti
       fetch('events25.json')
