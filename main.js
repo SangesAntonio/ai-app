@@ -10,6 +10,10 @@ import './style.css';
 // 🔥 GET YOUR GEMINI API KEY AT 🔥
 // 🔥 https://g.co/ai/idxGetGeminiKey 🔥
 
+document.getElementById('buttonGrafici').addEventListener('click', function() {
+  window.location.href = 'public/g/index.html';
+});
+
 const form = document.querySelector('form');
 const inputText = document.getElementById('input-text'); // Prendo la textarea
 
