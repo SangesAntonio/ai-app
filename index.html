@@ -26,6 +26,35 @@
   </div>
   <div>
   </div>
+  <div id="legend" style="position: absolute; top: 70px; right: 20px; background: rgba(255,255,255,0.9); padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-family: sans-serif;">
+    <button id="legendToggle" style="cursor: pointer; background: #eee; border: none; padding: 5px 10px; border-radius: 3px;">
+      Legenda Md
+    </button>
+    <div id="legendContent" style="display: none; margin-top: 10px;">
+      <ul style="list-style: none; padding: 0; margin: 0;">
+        <li style="margin-bottom: 5px;">
+          <span style="display:inline-block; width: 20px; height: 20px; background-color: #004c99; margin-right: 5px;"></span>
+          0-1: Blu scuro
+        </li>
+        <li style="margin-bottom: 5px;">
+          <span style="display:inline-block; width: 20px; height: 20px; background-color: #6397d0; margin-right: 5px;"></span>
+          1-2: Celeste
+        </li>
+        <li style="margin-bottom: 5px;">
+          <span style="display:inline-block; width: 20px; height: 20px; background-color: #66cc66; margin-right: 5px;"></span>
+          2-3: Verde
+        </li>
+        <li style="margin-bottom: 5px;">
+          <span style="display:inline-block; width: 20px; height: 20px; background-color: #ffa500; margin-right: 5px;"></span>
+          3-4: Arancione
+        </li>
+        <li>
+          <span style="display:inline-block; width: 20px; height: 20px; background-color: #ff0000; margin-right: 5px;"></span>
+          4-5: Rosso
+        </li>
+      </ul>
+    </div>
+  </div>
   <!-- Footer con crediti -->
   <footer style="
     position: fixed;
@@ -44,6 +73,10 @@
     </p>
   </footer>
   <script type="module">
+    document.getElementById('legendToggle').addEventListener('click', function() {
+      const content = document.getElementById('legendContent');
+      content.style.display = (content.style.display === 'none' || content.style.display === '') ? 'block' : 'none';
+    });
    
     
     import * as THREE from 'three';
