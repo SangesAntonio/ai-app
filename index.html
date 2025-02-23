@@ -17,6 +17,13 @@
     <span style="color:rgb(162, 165, 0)">Giallo: Solfatara</span><br>
     <span style="color:rgb(0, 165, 11)">Verde: Montenuovo</span>
   </div>
+  <div style="position: absolute; top: 10px; right: 10px; background: rgba(255,255,255,0.8); padding: 10px; border-radius: 5px;">
+    <label for="yearSelect">Seleziona Anno:</label>
+    <select id="yearSelect">
+      <option value="2025" selected>2025</option>
+      <option value="2024">2024</option>
+    </select>
+  </div>
   <div>
   </div>
   <!-- Footer con crediti -->
@@ -51,7 +58,7 @@
     document.addEventListener("DOMContentLoaded", () => {
       // Creazione della scena con sfondo bianco
       const scene = new THREE.Scene();
-      scene.background = new THREE.Color(0xDDffff);
+      scene.background = new THREE.Color(0x222222);
       
 
       const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -105,6 +112,7 @@ light.shadow.camera.far = 50;
         loader.load(modelPath, (gltf) => {
           const model = gltf.scene;
           console.log("Modello caricato:", model);
+          
 
           // Carica la texture
           const textureLoader = new THREE.TextureLoader();
@@ -113,13 +121,12 @@ light.shadow.camera.far = 50;
 
           });
           // Modifica il comportamento della texture per renderla più realistica
-          texture.wrapS = THREE.RepeatWrapping;
-          texture.wrapT = THREE.RepeatWrapping;
-          texture.repeat.set(1, 2); // Modifica questi valori per adattare la texture
+         
           const box = new THREE.Box3().setFromObject(model);
           const size = new THREE.Vector3();
           box.getSize(size);
-          //console.log("Dimensioni originali del modello:", size);
+
+         // Modifica questi valori per adattare la texture
 
           // Calcoliamo il fattore di scala per adattarlo alla griglia
           const gridSize = 27;
@@ -143,7 +150,7 @@ light.shadow.camera.far = 50;
 
       // Percorsi dei file (assicurati che siano corretti)
       const modelPath = '/3dmodels/scene.gltf';
-      const texturePath = '/3dmodels/textures/TerrainNodeMaterial_baseColor.jpeg';
+      const texturePath = '/3dmodels/textures/TerrainNodeMaterial_baseColorNosea.jpg';
 
       // Carichiamo il modello nella posizione della piramide
       load3DModel(modelPath, texturePath, pyramidPos, -0.1);
@@ -200,10 +207,6 @@ loaderTre.load('fonts/helvetiker_regular.typeface.json', (font) => {
       const textMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
       const textMesh = new THREE.Mesh(textGeometry, textMaterial);
 
-      // Posizioniamo il numero accanto al tick mark
-      //textMesh.position.set(halfTick + 1, y, 0);
-      //scene.add(textMesh);
-      //textMesh.position.set(halfTick + 1, pyramidPos.y, pyramidPos.x);
     }
   }
 
@@ -247,7 +250,7 @@ loaderTre.load('fonts/helvetiker_regular.typeface.json', (font) => {
       loader.load('fonts/helvetiker_regular.typeface.json', (font) => {
       const textGeometry = new TextGeometry('Terremoti Campi flegrei', {
         font: font,
-        size: 6,          // dimensione complessiva ridotta
+        size: 4,          // dimensione complessiva ridotta
         height: 5,      // profondità ridotta (ulteriore riduzione del 90% rispetto a 0.05 ad esempio)
         curveSegments: 12,
         bevelEnabled: true,
@@ -257,7 +260,7 @@ loaderTre.load('fonts/helvetiker_regular.typeface.json', (font) => {
         bevelSegments: 3,
         depth:0.2
       });
-      const textMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
+      const textMaterial = new THREE.MeshBasicMaterial({ color: 0xFEFEFE });
       const textMesh = new THREE.Mesh(textGeometry, textMaterial);
 
       // Se serve, applica un'ulteriore scala per ridurre ulteriormente la dimensione
@@ -267,7 +270,7 @@ loaderTre.load('fonts/helvetiker_regular.typeface.json', (font) => {
       textMesh.rotation.x = - Math.PI / 2;
 
       // Posiziona la scritta dove desideri, ad esempio vicino al bordo della griglia
-      textMesh.position.set(-20, 0, -15);
+      textMesh.position.set(0, 0, -15);
       scene.add(textMesh);
       textMesh.position.set(pyramidPos.z-25, pyramidPos.y, pyramidPos.x+18);
       
@@ -300,44 +303,67 @@ loaderTre.load('fonts/helvetiker_regular.typeface.json', (font) => {
       //addPyramid(40.7948, 14.1615174, 0,0x00ff00); // verde montenuovo
       let spheres = [];
       // Caricamento dei dati dei terremoti
-      fetch('events25.json')
+    
+      document.getElementById("yearSelect").addEventListener("change", function () {
+    const selectedYear = this.value; // Ottieni l'anno selezionato
+    const jsonFile = selectedYear === "2025" ? "events25.json" : "events24.json"; // Seleziona il file corretto
+
+    loadEarthquakeData(jsonFile);
+});
+
+// Funzione per rimuovere tutte le sfere dalla scena
+function clearEarthquakeSpheres() {
+    spheres.forEach(sphere => {
+        scene.remove(sphere);
+        sphere.geometry.dispose(); // Libera memoria
+        sphere.material.dispose();
+    });
+    spheres = []; // Svuota l'array
+}
+
+// Funzione per caricare i dati dei terremoti
+function loadEarthquakeData(jsonFile) {
+    fetch(jsonFile)
         .then(response => response.json())
         .then(data => {
-          if (!Array.isArray(data)) {
-            console.error("Errore: Il JSON non è un array.");
-            return;
-          }
+            if (!Array.isArray(data)) {
+                console.error("❌ Errore: Il JSON non è un array.");
+                return;
+            }
 
-          data.forEach(eq => {
-            const { latitude, longitude, depth } = eq.location;
-            if (!isValidCoordinate(latitude, longitude, depth)) return;
+            clearEarthquakeSpheres(); // 🔥 Rimuove le vecchie sfere prima di caricare i nuovi dati
 
-            const { x, y, z } = latLonToXYZ(latitude, longitude, depth);
-            if (isNaN(x) || isNaN(y) || isNaN(z)) return;
+            data.forEach(eq => {
+                const { latitude, longitude, depth } = eq.location;
+                if (!isValidCoordinate(latitude, longitude, depth)) return;
 
-            const magnitude = getMagnitude(eq);
-            if (magnitude <= 0) return;
+                const { x, y, z } = latLonToXYZ(latitude, longitude, depth);
+                if (isNaN(x) || isNaN(y) || isNaN(z)) return;
 
-            // Calcola il colore: di base giallo che diventa più rosso con l'aumentare della magnitudo
-            let factor = (magnitude - 1) / (5 - 1);
-            factor = Math.max(0, Math.min(1, factor));
-            const yellow = new THREE.Color(0x6397d0);
-            const red = new THREE.Color(0xff0000);
-            const color = yellow.clone().lerp(red, factor);
-            
+                const magnitude = getMagnitude(eq);
+                if (magnitude <= 0) return;
 
-            const geometry = new THREE.SphereGeometry(magnitude * 0.01, 16, 16);
-            const material = new THREE.MeshBasicMaterial({ color });
-            const sphere = new THREE.Mesh(geometry, material);
-            sphere.position.set(z, y, x);
-            //console.log(x,y,z)
-            scene.add(sphere);
-            spheres.push(sphere); // Salviamo la sfera nell'array
-            
-          });
+                // Calcola il colore: di base giallo che diventa più rosso con l'aumentare della magnitudo
+                let factor = (magnitude - 1) / (5 - 1);
+                factor = Math.max(0, Math.min(1, factor));
+                const yellow = new THREE.Color(0x6397d0);
+                const red = new THREE.Color(0xff0000);
+                const color = yellow.clone().lerp(red, factor);
+
+                const geometry = new THREE.SphereGeometry(magnitude * 0.03, 16, 16);
+                const material = new THREE.MeshBasicMaterial({ color });
+                const sphere = new THREE.Mesh(geometry, material);
+                sphere.position.set(z, y, x);
+                
+                scene.add(sphere);
+                spheres.push(sphere); // Salviamo la sfera nell'array
+            });
         })
-        
-        .catch(error => console.error("Errore nel caricamento del JSON:", error));
+        .catch(error => console.error("❌ Errore nel caricamento del JSON:", error));
+}
+
+// ✅ Carichiamo i dati iniziali (2025 di default)
+loadEarthquakeData("events25.json");
         document.getElementById("sizeSlider").addEventListener("input", (event) => {
           const scaleFactor = parseFloat(event.target.value);
           
@@ -345,10 +371,10 @@ loaderTre.load('fonts/helvetiker_regular.typeface.json', (font) => {
             sphere.scale.set(scaleFactor, scaleFactor, scaleFactor);
           });
         });
-
-      camera.position.set(pyramidPos.z,3, pyramidPos.x);
+        //x=75.29, y=2.41, z=-87.57
+      camera.position.set(75.29,3, -87.57);
       camera.lookAt(pyramidPos.z, pyramidPos.y, pyramidPos.x);
-      console.log(pyramidPos.z, pyramidPos.y, pyramidPos.x)
+     
 
       function animate() {
         requestAnimationFrame(animate);
@@ -356,7 +382,10 @@ loaderTre.load('fonts/helvetiker_regular.typeface.json', (font) => {
         renderer.render(scene, camera);
       }
       animate();
+
+     
     });
+    
 
     
     
