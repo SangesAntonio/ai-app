@@ -12,7 +12,7 @@
 <body>
   <div id="graficoContainer"></div>
   <div style="position: absolute; top: 10px; left: 10px; background: rgba(255,255,255,0.8); padding: 10px; border-radius: 5px;">
-    <label for="sizeSlider">Grandezza sfere:</label>
+    <label for="sizeSlider">Grandezza sfere:</label><br>
     <input type="range" id="sizeSlider" min="0.1" max="5" step="0.1" value="1"><br>
     <span style="color:rgb(162, 165, 0)">Giallo: Solfatara</span><br>
     <span style="color:rgb(0, 165, 11)">Verde: Montenuovo</span>
@@ -190,7 +190,7 @@ loaderTre.load('fonts/helvetiker_regular.typeface.json', (font) => {
       new THREE.Vector3(-halfTick, y, 0),
       new THREE.Vector3(halfTick, y, 0)
     ]);
-    const tickMaterial = new THREE.LineBasicMaterial({ color: 0x000000 });
+    const tickMaterial = new THREE.LineBasicMaterial({ color: 0xFFFFFF });
     const tick = new THREE.Line(tickGeometry, tickMaterial);
     scene.add(tick);
     tick.position.set(pyramidPos.z, pyramidPos.y, pyramidPos.x);
@@ -222,17 +222,18 @@ loaderTre.load('fonts/helvetiker_regular.typeface.json', (font) => {
 
       // Funzione per convertire latitudine, longitudine e profondità (in km) in coordinate 3D
       function latLonToXYZ(lat, lon, depth) {
-        // Definisci un fattore di scala per rendere le coordinate proporzionali alla profondità
-        const depthScale = 2;  // 1 km = 2 unità Three.js (aggiustabile)
-        const latLonScale = 100; // Scala per lat/lon per renderli coerenti (regolabile)
-
+        const depthScale = 2;  // Ad esempio, 1 km = 2 unità Three.js
+        // Fattori di scala derivati dal tuo esempio:
+        const lonScale = 100.17;  // oppure, se parti da 100, 100.17
+        const latScale = 96.79;  // oppure, se parti da 100, 96.79
+        
         const centerLat = 40;
         const centerLon = 15;
-
+        
         return {
-          x: (lon - centerLon) * latLonScale,
-          y: -depth * depthScale,  // Profondità proporzionale
-          z: (lat - centerLat) * latLonScale
+          x: (lon - centerLon) * lonScale,
+          y: -depth * depthScale,
+          z: (lat - centerLat) * latScale
         };
       }
 
@@ -243,8 +244,8 @@ loaderTre.load('fonts/helvetiker_regular.typeface.json', (font) => {
       }
 
       function getMagnitude(earthquake) {
-        return earthquake.magnitudos?.[0]?.value || 1;
-      }
+  return earthquake.magnitudos?.[0]?.value ?? null;
+}
       // Carica il font (assicurati di avere il file font corretto nella cartella indicata)
       const loader = new FontLoader();
       loader.load('fonts/helvetiker_regular.typeface.json', (font) => {
@@ -320,7 +321,26 @@ function clearEarthquakeSpheres() {
     });
     spheres = []; // Svuota l'array
 }
-
+function getColorForMagnitude(magnitude) {
+  // Assumiamo che magnitude sia compresa tra 0 e 5
+  // Definiamo 5 colori per gli intervalli:
+  // 0-1: Blu scuro
+  // 1-2: Celeste
+  // 2-3: Verde
+  // 3-4: Arancione
+  // 4-5: Rosso
+  if (magnitude < 1) {
+    return new THREE.Color(0x004c99); // Blu scuro
+  } else if (magnitude < 2) {
+    return new THREE.Color(0x6397d0); // Celeste
+  } else if (magnitude < 3) {
+    return new THREE.Color(0x66cc66); // Verde
+  } else if (magnitude < 4) {
+    return new THREE.Color(0xffa500); // Arancione
+  } else {
+    return new THREE.Color(0xff0000); // Rosso
+  }
+}
 // Funzione per caricare i dati dei terremoti
 function loadEarthquakeData(jsonFile) {
     fetch(jsonFile)
@@ -343,12 +363,12 @@ function loadEarthquakeData(jsonFile) {
                 const magnitude = getMagnitude(eq);
                 if (magnitude <= 0) return;
 
-                // Calcola il colore: di base giallo che diventa più rosso con l'aumentare della magnitudo
-                let factor = (magnitude - 1) / (5 - 1);
+                // Calcola il colore: di base celeste che diventa più rosso con l'aumentare della magnitudo
+                let factor = (magnitude - 1) / (3 - 1);
                 factor = Math.max(0, Math.min(1, factor));
-                const yellow = new THREE.Color(0x6397d0);
+                const celeste = new THREE.Color(0x6397d0);
                 const red = new THREE.Color(0xff0000);
-                const color = yellow.clone().lerp(red, factor);
+                const color = getColorForMagnitude(magnitude);
 
                 const geometry = new THREE.SphereGeometry(magnitude * 0.03, 16, 16);
                 const material = new THREE.MeshBasicMaterial({ color });
