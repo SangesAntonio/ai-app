@@ -86,7 +86,7 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Ombre più morbide
       scene.add(gridHelper);
 
       // Aggiunta della luce
-      const light = new THREE.DirectionalLight(0xffffff, 1);
+      const light = new THREE.DirectionalLight(0xffffff, 5);
 light.position.set(10, 20, 10); // Posiziona la luce dall'alto
 light.castShadow = true; // Permette alla luce di proiettare ombre
 scene.add(light);
