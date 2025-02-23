@@ -19,6 +19,23 @@
   </div>
   <div>
   </div>
+  <!-- Footer con crediti -->
+  <footer style="
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    text-align: left;
+    padding: 10px;
+    font-size: 12px;
+  ">
+    <p>
+      This work is based on "Campi Flegrei, Italy" (https://sketchfab.com/3d-models/campi-flegrei-italy-32129d36a7804a40b941b0a79ad01633) by Sara Carena (https://sketchfab.com/saracarena1) licensed under CC-BY-NC-SA-4.0 (http://creativecommons.org/licenses/by-nc-sa/4.0/) |<br> 📡 Dati sui terremoti da 
+      <a href="http://terremoti.ov.ingv.it/gossip/flegrei/2025/index.html" target="_blank" style="color: #ffcc00;">INGV</a> 
+      e altre fonti ufficiali.
+    </p>
+  </footer>
   <script type="module">
    
     
@@ -44,6 +61,8 @@
       document.getElementById("graficoContainer").appendChild(renderer.domElement);
 
       const controls = new OrbitControls(camera, renderer.domElement);
+      renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Ombre più morbide
       controls.enableDamping = true;
       
       const pyramidLat = 40.8269;
@@ -67,8 +86,16 @@
       scene.add(gridHelper);
 
       // Aggiunta della luce
-      const light = new THREE.AmbientLight(0xffffff, 2);
-      scene.add(light);
+      const light = new THREE.DirectionalLight(0xffffff, 1);
+light.position.set(10, 20, 10); // Posiziona la luce dall'alto
+light.castShadow = true; // Permette alla luce di proiettare ombre
+scene.add(light);
+
+// Miglioriamo la qualità dell'ombra
+light.shadow.mapSize.width = 2048;
+light.shadow.mapSize.height = 2048;
+light.shadow.camera.near = 0.5;
+light.shadow.camera.far = 50;
 
       // Funzione per caricare il modello 3D con texture
       function load3DModel(modelPath, texturePath, position, scale) {
@@ -81,35 +108,33 @@
 
           // Carica la texture
           const textureLoader = new THREE.TextureLoader();
-const texture = textureLoader.load(texturePath, () => {
-  console.log("Texture caricata con successo");
+          const texture = textureLoader.load(texturePath, () => {
+            console.log("Texture caricata con successo");
 
-  // Imposta la ripetizione della texture
-  texture.wrapS = THREE.RepeatWrapping;
-  texture.wrapT = THREE.RepeatWrapping;
-  texture.repeat.set(4, 4); // Modifica questi valori per adattare la texture
-});
+          });
+          // Modifica il comportamento della texture per renderla più realistica
+          texture.wrapS = THREE.RepeatWrapping;
+          texture.wrapT = THREE.RepeatWrapping;
+          texture.repeat.set(1, 2); // Modifica questi valori per adattare la texture
+          const box = new THREE.Box3().setFromObject(model);
+          const size = new THREE.Vector3();
+          box.getSize(size);
+          //console.log("Dimensioni originali del modello:", size);
 
-        // Applica la texture a tutte le mesh
-        model.traverse((child) => {
-          if (child.isMesh) {
-            child.material = new THREE.MeshStandardMaterial({
-              map: texture,
-              side: THREE.DoubleSide,
-            });
-          }
-        });
+          // Calcoliamo il fattore di scala per adattarlo alla griglia
+          const gridSize = 27;
+          const scaleFactor = gridSize / Math.max(size.x, size.z);
+          model.scale.set(scaleFactor, scaleFactor, scaleFactor);
+          model.rotation.y = -Math.PI / 2; // 90° in senso orario sull'asse Y
+          // Centriamo il modello nella griglia
+          model.position.set(pyramidPos.z +2, pyramidPos.y, pyramidPos.x + 0.3);
 
+          // Applica la texture a tutte le mesh
+          // Applicazione della texture al modello
+       
 
-          // Forza una posizione visibile
-          model.traverse((child) => {
-  if (child.isMesh) {
-    child.rotation.x = Math.PI; // Ruota ogni mesh individualmente
-  }
-});
-
-          model.scale.set(scale, scale, scale);
-          model.position.set(position.x, position.y, position.z);
+          //model.scale.set(0.06, 0.06, 0.06);
+          //model.position.set(position.x, 20, position.z);
           scene.add(model);
         }, undefined, (error) => {
           console.error("Errore nel caricamento del modello 3D:", error);
@@ -121,7 +146,7 @@ const texture = textureLoader.load(texturePath, () => {
       const texturePath = '/3dmodels/textures/TerrainNodeMaterial_baseColor.jpeg';
 
       // Carichiamo il modello nella posizione della piramide
-     // load3DModel(modelPath, texturePath, pyramidPos, -0.1);
+      load3DModel(modelPath, texturePath, pyramidPos, -0.1);
 
       function animate() {
         requestAnimationFrame(animate);
@@ -253,7 +278,7 @@ loaderTre.load('fonts/helvetiker_regular.typeface.json', (font) => {
           const { x, y, z } = latLonToXYZ(lat, lon, depth);
 
           // Geometria della piramide (Tetraedro)
-          const pyramidGeometry = new THREE.ConeGeometry(0.1, 0.4, 4); // Base 2, altezza 4, 4 lati
+          const pyramidGeometry = new THREE.ConeGeometry(0.1, 1.4, 4); // Base 2, altezza 4, 4 lati
           const pyramidMaterial = new THREE.MeshBasicMaterial({ color: new THREE.Color(color), wireframe: false });
           const pyramid = new THREE.Mesh(pyramidGeometry, pyramidMaterial);
 
@@ -272,6 +297,7 @@ loaderTre.load('fonts/helvetiker_regular.typeface.json', (font) => {
     
       addPyramid(40.8269, 14.1405, 0,0xEEff00); // giallo solfatara
       addPyramid(40.8352, 14.0877, 0,0x00ff00); // verde montenuovo
+      //addPyramid(40.7948, 14.1615174, 0,0x00ff00); // verde montenuovo
       let spheres = [];
       // Caricamento dei dati dei terremoti
       fetch('events25.json')
