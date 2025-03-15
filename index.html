@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Visualizzazione Terremoti 3D</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4" crossorigin="anonymous"></script>
   <style>
     body { margin: 0; overflow: hidden; background-color: white; }
     #graficoContainer { width: 100vw; height: 100vh; }
@@ -47,6 +49,14 @@
       </div>
     </div>
 </div>
+<!-- Loader Overlay -->
+<div id="loader-overlay" class="d-flex justify-content-center align-items-center position-fixed top-0 start-0 w-100 h-100 bg-white" style="z-index: 1050;">
+  <div class="text-center">
+      <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;"></div>
+      <p class="mt-2">Caricamento in corso...</p>
+  </div>
+</div>
+
 
   <!-- Footer con crediti -->
   <footer style="
@@ -132,47 +142,57 @@ light.shadow.camera.far = 50;
 
       // Funzione per caricare il modello 3D con texture
       function load3DModel(modelPath, texturePath, position, scale) {
-        const loader = new GLTFLoader();
-        const textureLoader = new TextureLoader();
+    // Mostra il loader all'inizio
+    const loaderOverlay = document.getElementById("loader-overlay");
+    loaderOverlay.classList.remove("d-none");
+    loaderOverlay.classList.add("d-flex");
 
-        loader.load(modelPath, (gltf) => {
-          const model = gltf.scene;
-          console.log("Modello caricato:", model);
-          
+    const loader = new GLTFLoader();
+    const textureLoader = new THREE.TextureLoader();
 
-          // Carica la texture
-          const textureLoader = new THREE.TextureLoader();
-          const texture = textureLoader.load(texturePath, () => {
-            console.log("Texture caricata con successo");
+    loader.load(
+        modelPath,
+        (gltf) => {
+            const model = gltf.scene;
 
-          });
-          // Modifica il comportamento della texture per renderla più realistica
-         
-          const box = new THREE.Box3().setFromObject(model);
-          const size = new THREE.Vector3();
-          box.getSize(size);
+            // Caricamento della texture
+            const textureLoader = new THREE.TextureLoader();
+            const texture = textureLoader.load(texturePath, () => {
+                console.log("Texture caricata con successo");
+            });
 
-         // Modifica questi valori per adattare la texture
+            // Calcolo della scala e posizionamento del modello
+            const box = new THREE.Box3().setFromObject(model);
+            const size = new THREE.Vector3();
+            box.getSize(size);
 
-          // Calcoliamo il fattore di scala per adattarlo alla griglia
-          const gridSize = 27;
-          const scaleFactor = gridSize / Math.max(size.x, size.z);
-          model.scale.set(scaleFactor, scaleFactor, scaleFactor);
-          model.rotation.y = -Math.PI / 2; // 90° in senso orario sull'asse Y
-          // Centriamo il modello nella griglia
-          model.position.set(pyramidPos.z +2, pyramidPos.y, pyramidPos.x + 0.3);
+            const gridSize = 27;
+            const scaleFactor = gridSize / Math.max(size.x, size.z);
+            model.scale.set(scaleFactor, scaleFactor, scaleFactor);
+            model.rotation.y = -Math.PI / 2; // 90° in senso orario sull'asse Y
+            model.position.set(pyramidPos.z + 2, pyramidPos.y, pyramidPos.x + 0.3);
 
-          // Applica la texture a tutte le mesh
-          // Applicazione della texture al modello
-       
+            // Aggiunge il modello alla scena
+            scene.add(model);
 
-          //model.scale.set(0.06, 0.06, 0.06);
-          //model.position.set(position.x, 20, position.z);
-          scene.add(model);
-        }, undefined, (error) => {
-          console.error("Errore nel caricamento del modello 3D:", error);
-        });
-      }
+            // Nasconde il loader dopo il caricamento
+            loaderOverlay.classList.remove("d-flex");
+            loaderOverlay.classList.add("d-none");
+        },
+        (xhr) => {
+            // Aggiornamento del progresso di caricamento (opzionale)
+            let percent = (xhr.loaded / xhr.total) * 100;
+            console.log(`Caricamento: ${percent.toFixed(2)}%`);
+        },
+        (error) => {
+            console.error("Errore nel caricamento del modello 3D:", error);
+            loaderOverlay.classList.remove("d-flex");
+            loaderOverlay.classList.add("d-none"); // Nasconde il loader anche in caso di errore
+        }
+    );
+}
+
+
 
       // Percorsi dei file (assicurati che siano corretti)
       const modelPath = '/3dmodels/scene.gltf';
@@ -405,7 +425,7 @@ function loadEarthquakeData(jsonFile) {
                 const geometry = new THREE.SphereGeometry(magnitude * 0.03, 16, 16);
                 const material = new THREE.MeshBasicMaterial({ color });
                 const sphere = new THREE.Mesh(geometry, material);
-                console.log(eq.date)
+                //console.log(eq.date)
                 sphere.position.set(z, y, x);
                 
                 scene.add(sphere);
