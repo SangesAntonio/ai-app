@@ -31,30 +31,23 @@
       Legenda Md
     </button>
     <div id="legendContent" style="display: none; margin-top: 10px;">
-      <ul style="list-style: none; padding: 0; margin: 0;">
-        <li style="margin-bottom: 5px;">
-          <span style="display:inline-block; width: 20px; height: 20px; background-color: #004c99; margin-right: 5px;"></span>
-          0-1: Blu scuro
-        </li>
-        <li style="margin-bottom: 5px;">
-          <span style="display:inline-block; width: 20px; height: 20px; background-color: #6397d0; margin-right: 5px;"></span>
-          1-2: Celeste
-        </li>
-        <li style="margin-bottom: 5px;">
-          <span style="display:inline-block; width: 20px; height: 20px; background-color: #66cc66; margin-right: 5px;"></span>
-          2-3: Verde
-        </li>
-        <li style="margin-bottom: 5px;">
-          <span style="display:inline-block; width: 20px; height: 20px; background-color: #ffa500; margin-right: 5px;"></span>
-          3-4: Arancione
-        </li>
-        <li>
-          <span style="display:inline-block; width: 20px; height: 20px; background-color: #ff0000; margin-right: 5px;"></span>
-          4-5: Rosso
-        </li>
-      </ul>
+      <div style="width: 150px; height: 20px; background: linear-gradient(to right, 
+        #00c8ff 0%,  /* Celeste (Magnitudo 1) */
+        #00ff00 25%, /* Verde (Magnitudo 2) */
+        #ffa500 50%, /* Arancione (Magnitudo 3) */
+        #ff0000 75%, /* Rosso (Magnitudo 4) */
+        #000000 100% /* Nero (Magnitudo 5) */
+      ); border: 1px solid #000;"></div>
+      <div style="display: flex; justify-content: space-between; font-size: 12px; margin-top: 5px;">
+        <span>1</span>
+        <span>2</span>
+        <span>3</span>
+        <span>4</span>
+        <span>5</span>
+      </div>
     </div>
-  </div>
+</div>
+
   <!-- Footer con crediti -->
   <footer style="
     position: fixed;
@@ -91,7 +84,7 @@
     document.addEventListener("DOMContentLoaded", () => {
       // Creazione della scena con sfondo bianco
       const scene = new THREE.Scene();
-      scene.background = new THREE.Color(0x222222);
+      scene.background = new THREE.Color(0x000000);
       
 
       const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -223,7 +216,7 @@ loaderTre.load('fonts/helvetiker_regular.typeface.json', (font) => {
       new THREE.Vector3(-halfTick, y, 0),
       new THREE.Vector3(halfTick, y, 0)
     ]);
-    const tickMaterial = new THREE.LineBasicMaterial({ color: 0xFFFFFF });
+    const tickMaterial = new THREE.LineBasicMaterial({ color: 0xDDDDDD });
     const tick = new THREE.Line(tickGeometry, tickMaterial);
     scene.add(tick);
     tick.position.set(pyramidPos.z, pyramidPos.y, pyramidPos.x);
@@ -262,6 +255,7 @@ loaderTre.load('fonts/helvetiker_regular.typeface.json', (font) => {
         
         const centerLat = 40;
         const centerLon = 15;
+        //40.8269, 14.1405
         
         return {
           x: (lon - centerLon) * lonScale,
@@ -334,7 +328,7 @@ loaderTre.load('fonts/helvetiker_regular.typeface.json', (font) => {
     
       addPyramid(40.8269, 14.1405, 0,0xEEff00); // giallo solfatara
       addPyramid(40.8352, 14.0877, 0,0x00ff00); // verde montenuovo
-      //addPyramid(40.7948, 14.1615174, 0,0x00ff00); // verde montenuovo
+      addPyramid(40.7948 * 0.9996, 14.1615174 , 0,0x00ff00); // verde montenuovo
       let spheres = [];
       // Caricamento dei dati dei terremoti
     
@@ -355,24 +349,29 @@ function clearEarthquakeSpheres() {
     spheres = []; // Svuota l'array
 }
 function getColorForMagnitude(magnitude) {
-  // Assumiamo che magnitude sia compresa tra 0 e 5
-  // Definiamo 5 colori per gli intervalli:
-  // 0-1: Blu scuro
-  // 1-2: Celeste
-  // 2-3: Verde
-  // 3-4: Arancione
-  // 4-5: Rosso
-  if (magnitude < 1) {
-    return new THREE.Color(0x004c99); // Blu scuro
-  } else if (magnitude < 2) {
-    return new THREE.Color(0x6397d0); // Celeste
-  } else if (magnitude < 3) {
-    return new THREE.Color(0x66cc66); // Verde
-  } else if (magnitude < 4) {
-    return new THREE.Color(0xffa500); // Arancione
-  } else {
-    return new THREE.Color(0xff0000); // Rosso
+    // Definizione dei colori principali
+  const colors = [
+    { mag: 1, color: new THREE.Color(0x00c8ff) }, // Celeste
+    { mag: 2, color: new THREE.Color(0x00ff00) }, // Verde
+    { mag: 3, color: new THREE.Color(0xffa500) }, // Arancione
+    { mag: 4, color: new THREE.Color(0xff0000) }, // Rosso
+    { mag: 5, color: new THREE.Color(0x000000) }  // Nero
+  ];
+
+  // Se la magnitudo è minore o uguale a 1, restituisci celeste
+  if (magnitude <= 1) return colors[0].color;
+  // Se la magnitudo è maggiore o uguale a 5, restituisci nero
+  if (magnitude >= 5) return colors[colors.length - 1].color;
+
+  // Trova i due colori tra cui interpolare
+  for (let i = 0; i < colors.length - 1; i++) {
+    if (magnitude >= colors[i].mag && magnitude < colors[i + 1].mag) {
+      let t = (magnitude - colors[i].mag) / (colors[i + 1].mag - colors[i].mag);
+      return new THREE.Color().lerpColors(colors[i].color, colors[i + 1].color, t);
+    }
   }
+  
+  return new THREE.Color(0xffffff); // Bianco di fallback (non dovrebbe mai succedere)
 }
 // Funzione per caricare i dati dei terremoti
 function loadEarthquakeData(jsonFile) {
@@ -388,9 +387,9 @@ function loadEarthquakeData(jsonFile) {
 
             data.forEach(eq => {
                 const { latitude, longitude, depth } = eq.location;
-                if (!isValidCoordinate(latitude, longitude, depth)) return;
+                if (!isValidCoordinate(latitude, longitude , depth)) return;
 
-                const { x, y, z } = latLonToXYZ(latitude, longitude, depth);
+                const { x, y, z } = latLonToXYZ(latitude , longitude , depth);
                 if (isNaN(x) || isNaN(y) || isNaN(z)) return;
 
                 const magnitude = getMagnitude(eq);
@@ -406,6 +405,7 @@ function loadEarthquakeData(jsonFile) {
                 const geometry = new THREE.SphereGeometry(magnitude * 0.03, 16, 16);
                 const material = new THREE.MeshBasicMaterial({ color });
                 const sphere = new THREE.Mesh(geometry, material);
+                console.log(eq.date)
                 sphere.position.set(z, y, x);
                 
                 scene.add(sphere);
