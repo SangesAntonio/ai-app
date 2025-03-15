@@ -16,8 +16,7 @@
   <div style="position: absolute; top: 10px; left: 10px; background: rgba(255,255,255,0.8); padding: 10px; border-radius: 5px;">
     <label for="sizeSlider">Grandezza sfere:</label><br>
     <input type="range" id="sizeSlider" min="0.1" max="5" step="0.1" value="1"><br>
-    <span style="color:rgb(162, 165, 0)">Giallo: Solfatara</span><br>
-    <span style="color:rgb(0, 165, 11)">Verde: Montenuovo</span>
+   
   </div>
   <div style="position: absolute; top: 10px; right: 10px; background: rgba(255,255,255,0.8); padding: 10px; border-radius: 5px;">
     <label for="yearSelect">Seleziona Anno:</label>
@@ -50,10 +49,10 @@
     </div>
 </div>
 <!-- Loader Overlay -->
-<div id="loader-overlay" class="d-flex justify-content-center align-items-center position-fixed top-0 start-0 w-100 h-100 bg-white" style="z-index: 1050;">
+<div id="loader-overlay" class="d-flex justify-content-center align-items-center position-fixed top-0 start-0 w-100 h-100 bg-transparent" style="z-index: 1050;">
   <div class="text-center">
       <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;"></div>
-      <p class="mt-2">Caricamento in corso...</p>
+      <p class="mt-2 text-white">Caricamento in corso...</p>
   </div>
 </div>
 
@@ -94,7 +93,7 @@
     document.addEventListener("DOMContentLoaded", () => {
       // Creazione della scena con sfondo bianco
       const scene = new THREE.Scene();
-      scene.background = new THREE.Color(0x000000);
+      scene.background = new THREE.Color(0x333333);
       
 
       const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -105,7 +104,7 @@
 
       const controls = new OrbitControls(camera, renderer.domElement);
       renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Ombre più morbide
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Ombre più morbide
       controls.enableDamping = true;
       
       const pyramidLat = 40.8269;
@@ -115,6 +114,45 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Ombre più morbide
       // Convertiamo le coordinate in 3D
       const pyramidPos = latLonToXYZ(pyramidLat, pyramidLon, pyramidDepth);
       const pyramidSecondPos = latLonToXYZ(40.8352, 14.0877,0);
+      console.log(pyramidPos)
+      // Funzione per convertire latitudine, longitudine e profondità (in km) in coordinate 3D
+      function latLonToXYZ(lat, lon, depth) {
+        const depthScale = 2;  // Ad esempio, 1 km = 2 unità Three.js
+        // Fattori di scala derivati dal tuo esempio:
+        const lonScale = 100.17;  // oppure, se parti da 100, 100.17
+        //const latScale = 96.79;  // oppure, se parti da 100, 96.79
+        const latScale = 94.80;
+
+        
+        const centerLat = 40;
+        const centerLon = 15;
+        //40.8269, 14.1405
+        
+        return {
+          x: (lon - centerLon) * lonScale,
+          y: -depth * depthScale,
+          z: (lat - centerLat) * latScale
+        };
+      }
+      // Funzione per convertire latitudine, longitudine e profondità (in km) in coordinate 3D
+      function latLonToXYZPOINT(lat, lon, depth) {
+        const depthScale = 2;  // Ad esempio, 1 km = 2 unità Three.js
+        // Fattori di scala derivati dal tuo esempio:
+        const lonScale = 100.17;  // oppure, se parti da 100, 100.17
+        //const latScale = 96.79;  // oppure, se parti da 100, 96.79
+        const latScale = 94.80;
+
+        
+        const centerLat = 40;
+        const centerLon = 15;
+        //40.8269, 14.1405
+        
+        return {
+          x: (lon - centerLon) * lonScale,
+          y: -depth * depthScale,
+          z: (lat - centerLat) * latScale
+        };
+      }
       
       controls.target.set(pyramidPos.z, pyramidPos.y, pyramidPos.x);
 
@@ -130,18 +168,18 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Ombre più morbide
 
       // Aggiunta della luce
       const light = new THREE.DirectionalLight(0xffffff, 5);
-light.position.set(10, 20, 10); // Posiziona la luce dall'alto
-light.castShadow = true; // Permette alla luce di proiettare ombre
-scene.add(light);
+      light.position.set(10, 20, 10); // Posiziona la luce dall'alto
+      light.castShadow = true; // Permette alla luce di proiettare ombre
+      scene.add(light);
 
-// Miglioriamo la qualità dell'ombra
-light.shadow.mapSize.width = 2048;
-light.shadow.mapSize.height = 2048;
-light.shadow.camera.near = 0.5;
-light.shadow.camera.far = 50;
+      // Miglioriamo la qualità dell'ombra
+      light.shadow.mapSize.width = 2048;
+      light.shadow.mapSize.height = 2048;
+      light.shadow.camera.near = 0.5;
+      light.shadow.camera.far = 50;
 
       // Funzione per caricare il modello 3D con texture
-      function load3DModel(modelPath, texturePath, position, scale) {
+function load3DModel(modelPath, texturePath, position, scale) {
     // Mostra il loader all'inizio
     const loaderOverlay = document.getElementById("loader-overlay");
     loaderOverlay.classList.remove("d-none");
@@ -225,7 +263,8 @@ light.shadow.camera.far = 50;
 
       // Funzione per aggiungere un tick mark orizzontale
       // Carica il font prima di creare i tick mark
-const loaderTre = new FontLoader();
+      const loaderTre = new FontLoader();
+      
 loaderTre.load('fonts/helvetiker_regular.typeface.json', (font) => {
 
   function addTickMark(y, index, tickLength = 2) {
@@ -266,23 +305,7 @@ loaderTre.load('fonts/helvetiker_regular.typeface.json', (font) => {
       // Consideriamo lat=40 e lon=10 come centro, che verranno mappati su (0,0,0)
      
 
-      // Funzione per convertire latitudine, longitudine e profondità (in km) in coordinate 3D
-      function latLonToXYZ(lat, lon, depth) {
-        const depthScale = 2;  // Ad esempio, 1 km = 2 unità Three.js
-        // Fattori di scala derivati dal tuo esempio:
-        const lonScale = 100.17;  // oppure, se parti da 100, 100.17
-        const latScale = 96.79;  // oppure, se parti da 100, 96.79
-        
-        const centerLat = 40;
-        const centerLon = 15;
-        //40.8269, 14.1405
-        
-        return {
-          x: (lon - centerLon) * lonScale,
-          y: -depth * depthScale,
-          z: (lat - centerLat) * latScale
-        };
-      }
+      
 
 
       function isValidCoordinate(lat, lon, depth) {
@@ -291,8 +314,8 @@ loaderTre.load('fonts/helvetiker_regular.typeface.json', (font) => {
       }
 
       function getMagnitude(earthquake) {
-  return earthquake.magnitudos?.[0]?.value ?? null;
-}
+        return earthquake.magnitudos?.[0]?.value ?? null;
+      }
       // Carica il font (assicurati di avere il file font corretto nella cartella indicata)
       const loader = new FontLoader();
       loader.load('fonts/helvetiker_regular.typeface.json', (font) => {
@@ -326,7 +349,8 @@ loaderTre.load('fonts/helvetiker_regular.typeface.json', (font) => {
 
       function addPyramid(lat, lon, depth, color) {
           // Converti le coordinate geografiche in coordinate 3D
-          const { x, y, z } = latLonToXYZ(lat, lon, depth);
+          const { x, y, z } = latLonToXYZPOINT(lat, lon, depth);
+          console.log(x, y, z)
 
           // Geometria della piramide (Tetraedro)
           const pyramidGeometry = new THREE.ConeGeometry(0.1, 1.4, 4); // Base 2, altezza 4, 4 lati
@@ -346,18 +370,18 @@ loaderTre.load('fonts/helvetiker_regular.typeface.json', (font) => {
 
       // Aggiungi una piramide con un colore specifico
     
-      addPyramid(40.8269, 14.1405, 0,0xEEff00); // giallo solfatara
-      addPyramid(40.8352, 14.0877, 0,0x00ff00); // verde montenuovo
-      addPyramid(40.7948 * 0.9996, 14.1615174 , 0,0x00ff00); // verde montenuovo
+      ///addPyramid(40.8269, 14.1405, 0,0xEEff00); // giallo solfatara
+      ///addPyramid(40.8352, 14.0877, 0,0x00ff00); // verde montenuovo
+      ///addPyramid(40.7948 , 14.1615174 , 0,0x00ff00); // verde montenuovo
       let spheres = [];
       // Caricamento dei dati dei terremoti
     
       document.getElementById("yearSelect").addEventListener("change", function () {
-    const selectedYear = this.value; // Ottieni l'anno selezionato
-    const jsonFile = selectedYear === "2025" ? "events25.json" : "events24.json"; // Seleziona il file corretto
+          const selectedYear = this.value; // Ottieni l'anno selezionato
+          const jsonFile = selectedYear === "2025" ? "events25.json" : "events24.json"; // Seleziona il file corretto
 
-    loadEarthquakeData(jsonFile);
-});
+          loadEarthquakeData(jsonFile);
+      });
 
 // Funzione per rimuovere tutte le sfere dalla scena
 function clearEarthquakeSpheres() {
@@ -409,7 +433,7 @@ function loadEarthquakeData(jsonFile) {
                 const { latitude, longitude, depth } = eq.location;
                 if (!isValidCoordinate(latitude, longitude , depth)) return;
 
-                const { x, y, z } = latLonToXYZ(latitude , longitude , depth);
+                const { x, y, z } = latLonToXYZPOINT(latitude , longitude , depth);
                 if (isNaN(x) || isNaN(y) || isNaN(z)) return;
 
                 const magnitude = getMagnitude(eq);
@@ -427,6 +451,7 @@ function loadEarthquakeData(jsonFile) {
                 const sphere = new THREE.Mesh(geometry, material);
                 //console.log(eq.date)
                 sphere.position.set(z, y, x);
+               
                 
                 scene.add(sphere);
                 spheres.push(sphere); // Salviamo la sfera nell'array
