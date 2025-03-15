@@ -404,9 +404,9 @@ loaderTre.load('fonts/helvetiker_regular.typeface.json', (font) => {
       textMesh.rotation.x = - Math.PI / 2;
 
       // Posiziona la scritta dove desideri, ad esempio vicino al bordo della griglia
-      textMesh.position.set(0, 0, -15);
+      //textMesh.position.set(10, 0, -15);
       scene.add(textMesh);
-      textMesh.position.set(pyramidPos.z-25, pyramidPos.y, pyramidPos.x+18);
+      textMesh.position.set(pyramidPos.z-15, pyramidPos.y, pyramidPos.x+18);
       
     });
 
@@ -438,8 +438,9 @@ loaderTre.load('fonts/helvetiker_regular.typeface.json', (font) => {
       ///addPyramid(40.7948 , 14.1615174 , 0,0x00ff00); // verde montenuovo
       let spheres = [];
       // Caricamento dei dati dei terremoti
-      const yearSelected = document.getElementById("yearSelect").value;
-      const jsonFileYear = yearSelected === "2025" ? "events25.json" : "events24.json"; // Seleziona il file corretto
+      let yearSelected = document.getElementById("yearSelect").value;
+      let jsonFileYear = yearSelected === "2025" ? "events25.json" : "events24.json"; // Seleziona il file corretto
+      console.log(jsonFileYear)
     
       document.getElementById("yearSelect").addEventListener("change", function () {
           const selectedYear = this.value; // Ottieni l'anno selezionato
@@ -483,7 +484,7 @@ function getColorForMagnitude(magnitude) {
   return new THREE.Color(0xffffff); // Bianco di fallback (non dovrebbe mai succedere)
 }
 // Funzione per caricare i dati dei terremoti
-function loadEarthquakeData(jsonFile, minMagnitude = 1, maxMagnitude = 5) {
+function loadEarthquakeData(jsonFile, minMagnitude = 0, maxMagnitude = 5) {
     fetch(jsonFile)
         .then(response => response.json())
         .then(data => {
@@ -561,7 +562,9 @@ loadEarthquakeData(jsonFileYear);
             alert("La magnitudo minima non può essere maggiore della massima!");
             return;
           }
-          
+          let yearSelected = document.getElementById("yearSelect").value;
+          let jsonFileYear = yearSelected === "2025" ? "events25.json" : "events24.json"; // Seleziona il file corretto
+          console.log(jsonFileYear)
           loadEarthquakeData(jsonFileYear,minMag, maxMag);
           console.log(yearSelected)
         });
