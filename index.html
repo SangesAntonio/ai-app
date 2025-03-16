@@ -134,7 +134,7 @@
     <p>
       This work is based on "Campi Flegrei, Italy" (https://sketchfab.com/3d-models/campi-flegrei-italy-32129d36a7804a40b941b0a79ad01633) by Sara Carena (https://sketchfab.com/saracarena1) licensed under CC-BY-NC-SA-4.0 (http://creativecommons.org/licenses/by-nc-sa/4.0/) |<br> 📡 Dati sui terremoti da 
       <a href="http://terremoti.ov.ingv.it/gossip/flegrei/2025/index.html" target="_blank" style="color: #ffcc00;">INGV</a> 
-      e altre fonti ufficiali.
+      e altre fonti ufficiali. Sviluppo e design di Antonio Sanges
     </p>
   </footer>
   <script type="module">
@@ -180,42 +180,26 @@
       console.log(pyramidPos)
       // Funzione per convertire latitudine, longitudine e profondità (in km) in coordinate 3D
       function latLonToXYZ(lat, lon, depth) {
-        const depthScale = 2;  // Ad esempio, 1 km = 2 unità Three.js
-        // Fattori di scala derivati dal tuo esempio:
-        const lonScale = 100.17;  // oppure, se parti da 100, 100.17
-        //const latScale = 96.79;  // oppure, se parti da 100, 96.79
-        const latScale = 94.80;
+        const depthScale = 2;  
+          const mapWidth = 20.8;  
+          const mapHeight = 20;
+          const intervalloLon = 14.225229 - 14.027130;  // circa 0.198099
+          const intervalloLat = 0.135034;       
 
-        
-        const centerLat = 40;
-        const centerLon = 15;
-        //40.8269, 14.1405
-        
-        return {
-          x: (lon - centerLon) * lonScale,
-          y: -depth * depthScale,
-          z: (lat - centerLat) * latScale
-        };
-      }
-      // Funzione per convertire latitudine, longitudine e profondità (in km) in coordinate 3D
-      function latLonToXYZPOINT(lat, lon, depth) {
-        const depthScale = 2;  // Ad esempio, 1 km = 2 unità Three.js
-        // Fattori di scala derivati dal tuo esempio:
-        const lonScale = 100.17;  // oppure, se parti da 100, 100.17
-        //const latScale = 96.79;  // oppure, se parti da 100, 96.79
-        const latScale = 94.80;
+          // Coordinate del centro geografico della tua mappa (scelgo un punto centrale)
+          const centerLat = (40.772644 + 40.907678) / 2;  // media delle latitudini
+          const centerLon = (14.225229 + 14.027130) / 2;  // media delle longitudini
 
-        
-        const centerLat = 40;
-        const centerLon = 15;
-        //40.8269, 14.1405
-        
-        return {
-          x: (lon - centerLon) * lonScale,
-          y: -depth * depthScale,
-          z: (lat - centerLat) * latScale
-        };
+          return {
+              x: (lon - centerLon) * (mapWidth / intervalloLon),
+              y: -depth * depthScale,
+              z: (lat - centerLat) * (mapHeight / intervalloLat)
+          };
       }
+
+function latLonToXYZPOINT(lat, lon, depth) {
+    return latLonToXYZ(lat, lon, depth);
+}
       
       controls.target.set(pyramidPos.z, pyramidPos.y, pyramidPos.x);
 
@@ -433,9 +417,9 @@ loaderTre.load('fonts/helvetiker_regular.typeface.json', (font) => {
 
       // Aggiungi una piramide con un colore specifico
     
-      ///addPyramid(40.8269, 14.1405, 0,0xEEff00); // giallo solfatara
-      ///addPyramid(40.8352, 14.0877, 0,0x00ff00); // verde montenuovo
-      ///addPyramid(40.7948 , 14.1615174 , 0,0x00ff00); // verde montenuovo
+      //addPyramid(40.8269, 14.1405, 0,0xEEff00); // giallo solfatara
+      //addPyramid(40.8352, 14.0877, 0,0x00ff00); // verde montenuovo
+      //addPyramid(40.7948 , 14.1615174 , 0,0x00ff00); // verde montenuovo
       let spheres = [];
       // Caricamento dei dati dei terremoti
       let yearSelected = document.getElementById("yearSelect").value;
@@ -534,8 +518,8 @@ loadEarthquakeData(jsonFileYear);
           });
         });
         //x=75.29, y=2.41, z=-87.57
-      camera.position.set(75.29,3, -87.57);
-      camera.lookAt(pyramidPos.z, pyramidPos.y, pyramidPos.x);
+      camera.position.set(-5,2, -5.57);
+      camera.lookAt(0,2, 0);
      
 
       function animate() {
