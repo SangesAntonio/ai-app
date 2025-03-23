@@ -21,6 +21,14 @@
     main {
       padding: 1rem;
     }
+    .selector {
+      text-align: center;
+      font-size: 0.95rem;
+      color: #555;
+      margin: 0.5rem auto 1rem auto;
+      width: 100%;
+      max-width: 90%;
+    }
     #chart {
       background: white;
       border-radius: 10px;
@@ -30,7 +38,7 @@
       max-width: 100%;
       overflow-x: auto;
     }
-    .note, .selector {
+    .note {
       text-align: center;
       font-size: 0.95rem;
       color: #555;
@@ -106,7 +114,7 @@
         title: `Accelerazione negli ultimi ${selectedMinutes} minuti`,
         xaxis: { title: "Campionamenti recenti", showticklabels: false },
         yaxis: { title: "Valore (m/s²)", rangemode: 'tozero', autorange: false, range: [-2, 12] },
-        margin: { t: 50, l: 50, r: 10, b: 50 },
+        margin: { t: 80, l: 50, r: 10, b: 50 },
         legend: { orientation: 'h', y: -0.3 },
         height: window.innerHeight * 0.6
       };
