@@ -3,599 +3,89 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Visualizzazione Terremoti 3D</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4" crossorigin="anonymous"></script>
+  <title>Dati Accelerometro</title>
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
   <style>
-    body { margin: 0; overflow: hidden; background-color: white; }
-    #graficoContainer { width: 100vw; height: 100vh; }
-
-    #filterBar {
-    display: flex;
-    gap: 15px;
-    border-bottom: 1px solid #ddd;
-    z-index: 1050;
-}
-
-/* Stile dei singoli filtri */
-.filter-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    min-width: 120px;
-}
-
-
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f4f4f4;
+    }
+    header {
+      background: #0077ff;
+      color: white;
+      padding: 1rem;
+      text-align: center;
+    }
+    main {
+      padding: 2rem;
+    }
+    #chart {
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
   </style>
 </head>
 <body>
-  <div id="graficoContainer"></div>
-<!-- Pulsante per mostrare/nascondere i filtri -->
-<!-- Pulsante per mostrare/nascondere i filtri (in basso a destra) -->
-<button id="toggleFilters" class="btn  btn-light btn-sm position-fixed bottom-50 end-0 m-2" style="z-index: 1100;">
-  <i class="bi bi-funnel-fill"></i> Filtri
-</button>
+  <header>
+    <h1>Grafico Accelerometro</h1>
+    <p>Ultimi 10 minuti di dati da Firebase</p>
+  </header>
+  <main>
+    <div id="chart"></div>
+  </main>
 
-<!-- Barra filtri in alto -->
-<div id="filterBar" class="position-fixed top-0 w-100 p-3 bg-dark shadow d-none" style="z-index: 1050;">
-<div class="container">
-  <div class="row g-2 align-items-center">
-    
-    <!-- Filtro Anno -->
-    <div class="col-sm-4 col-md-3">
-      <label for="yearSelect" class="form-label text-light">Anno:</label>
-      <select id="yearSelect" class="form-select form-select-sm">
-        <option value="2025" selected>2025</option>
-        <option value="2024">2024</option>
-      </select>
-    </div>
-    
-    <!-- Filtro Grandezza Sfere -->
-    <div class="col-sm-4 col-md-3">
-      <label for="sizeSlider" class="form-label text-light">Grandezza sfere:</label>
-      <input type="range" id="sizeSlider" class="form-range" min="0.1" max="5" step="0.1" value="1">
-    </div>
-    
-    <!-- Filtro Magnitudo -->
-    <div class="col-sm-4 col-md-4">
-      <label class="form-label text-light">Magnitudo:</label>
-      <div class="input-group input-group-sm">
-        <select id="magnitudeMin" class="form-select">
-          <option value="1" selected>≥ 1</option>
-          <option value="2">≥ 2</option>
-          <option value="3">≥ 3</option>
-          <option value="4">≥ 4</option>
-          <option value="5">≥ 5</option>
-        </select>
-        <span class="input-group-text">-</span>
-        <select id="magnitudeMax" class="form-select">
-          <option value="5" selected>≤ 5</option>
-          <option value="4">≤ 4</option>
-          <option value="3">≤ 3</option>
-          <option value="2">≤ 2</option>
-          <option value="1">≤ 1</option>
-        </select>
-      </div>
-    </div>
-    
-    <!-- Bottone Applica Filtro -->
-    <div class="col-12 col-md-2 text-md-end">
-      <button id="applyFilter" class="btn btn-primary btn-sm mt-2 mt-md-0">Applica</button>
-    </div>
-    
-  </div>
-</div>
-</div>
+  <script>
+    const url = "https://api-sismografo-default-rtdb.europe-west1.firebasedatabase.app/batch_acc.json";
 
+    async function fetchAndPlot() {
+      const res = await fetch(url);
+      const data = await res.json();
 
+      const allTimestamps = Object.keys(data).sort();
+      const now = new Date().getTime();
+      const tenMinutesAgo = now - (10 * 60 * 1000);
 
-  <div id="legend" style="position: absolute; top: 70px; right: 20px; background: rgba(255,255,255,0.9); padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-family: sans-serif;">
-    <button id="legendToggle" style="cursor: pointer; background: #eee; border: none; padding: 5px 10px; border-radius: 3px;">
-      Legenda Md
-    </button>
-    <div id="legendContent" style="display: none; margin-top: 10px;">
-      <div style="width: 150px; height: 20px; background: linear-gradient(to right, 
-        #00c8ff 0%,  /* Celeste (Magnitudo 1) */
-        #00ff00 25%, /* Verde (Magnitudo 2) */
-        #ffa500 50%, /* Arancione (Magnitudo 3) */
-        #ff0000 75%, /* Rosso (Magnitudo 4) */
-        #000000 100% /* Nero (Magnitudo 5) */
-      ); border: 1px solid #000;"></div>
-      <div style="display: flex; justify-content: space-between; font-size: 12px; margin-top: 5px;">
-        <span>1</span>
-        <span>2</span>
-        <span>3</span>
-        <span>4</span>
-        <span>5</span>
-      </div>
-    </div>
-</div>
-<!-- Loader Overlay -->
-<div id="loader-overlay" class="d-flex justify-content-center align-items-center position-fixed top-0 start-0 w-100 h-100 bg-transparent" style="z-index: 1050;">
-  <div class="text-center">
-      <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;"></div>
-      <p class="mt-2 text-white">Caricamento in corso...</p>
-  </div>
-</div>
+      const xAxis = [];
+      const dataX = [], dataY = [], dataZ = [];
 
+      for (let key of allTimestamps) {
+        const batch = data[key];
+        if (!batch || !batch.letture || !batch.end_timestamp) continue;
 
-  <!-- Footer con crediti -->
-  <footer style="
-  position: fixed;
-  bottom: 0;
-  width: 100%;
-  background: rgba(0, 0, 0, 0.8);
-  color: white;
-  text-align: left;
-  padding: 10px;
-  font-size: 9px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-">
-<p style="margin: 0; max-width: 80%;">
-  This work is based on 
-  <a href="https://sketchfab.com/3d-models/campi-flegrei-italy-32129d36a7804a40b941b0a79ad01633" target="_blank" style="color: #ffcc00;">"Campi Flegrei, Italy"</a> 
-  by 
-  <a href="https://sketchfab.com/saracarena1" target="_blank" style="color: #ffcc00;">Sara Carena</a> licensed under CC-BY-NC-SA-4.0 |
-  📡 Dati sui terremoti da 
-  <a href="http://terremoti.ov.ingv.it/gossip/flegrei/2025/index.html" target="_blank" style="color: #ffcc00;">INGV</a> 
-  e altre fonti ufficiali. Sviluppo e design di Antonio Sanges
-</p>
+        const batchTime = new Date(batch.end_timestamp).getTime();
+        if (batchTime < tenMinutesAgo) continue; // salta se troppo vecchio
 
-<button  onclick="location.href='/accelerometro/'" style="
-  background-color: #0077ff;
-  color: white;
-  border: none;
-  padding: 6px 12px;
-  font-size: 10px;
-  border-radius: 5px;
-  cursor: pointer;
-  margin-top: 5px;
-">
-  📈 Accelerometro
-</button>
-</footer>
-
-  <script type="module">
-    document.getElementById('legendToggle').addEventListener('click', function() {
-      const content = document.getElementById('legendContent');
-      content.style.display = (content.style.display === 'none' || content.style.display === '') ? 'block' : 'none';
-    });
-   
-    
-    import * as THREE from 'three';
-    import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-
-    import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
-    import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
-
-    import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-    import { TextureLoader } from 'three';
-
-    document.addEventListener("DOMContentLoaded", () => {
-      // Creazione della scena con sfondo bianco
-      const scene = new THREE.Scene();
-      scene.background = new THREE.Color(0x333333);
-      
-
-      const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-      const renderer = new THREE.WebGLRenderer({ antialias: true });
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      renderer.setClearColor(0xffffff, 1);
-      document.getElementById("graficoContainer").appendChild(renderer.domElement);
-
-      const controls = new OrbitControls(camera, renderer.domElement);
-      renderer.shadowMap.enabled = true;
-      renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Ombre più morbide
-      controls.enableDamping = true;
-      
-      const pyramidLat = 40.8269;
-      const pyramidLon = 14.1405;
-      const pyramidDepth = 0;
-      
-      // Convertiamo le coordinate in 3D
-      const pyramidPos = latLonToXYZ(pyramidLat, pyramidLon, pyramidDepth);
-      const pyramidSecondPos = latLonToXYZ(40.8352, 14.0877,0);
-      console.log(pyramidPos)
-      // Funzione per convertire latitudine, longitudine e profondità (in km) in coordinate 3D
-      function latLonToXYZ(lat, lon, depth) {
-        const depthScale = 2;  
-          const mapWidth = 20.8;  
-          const mapHeight = 20;
-          const intervalloLon = 14.225229 - 14.027130;  // circa 0.198099
-          const intervalloLat = 0.135034;       
-
-          // Coordinate del centro geografico della tua mappa (scelgo un punto centrale)
-          const centerLat = (40.772644 + 40.907678) / 2;  // media delle latitudini
-          const centerLon = (14.225229 + 14.027130) / 2;  // media delle longitudini
-
-          return {
-              x: (lon - centerLon) * (mapWidth / intervalloLon),
-              y: -depth * depthScale,
-              z: (lat - centerLat) * (mapHeight / intervalloLat)
-          };
+        batch.letture.forEach((p, i) => {
+          const label = `${batch.end_timestamp} [${i}]`;
+          xAxis.push(label);
+          dataX.push(p.x);
+          dataY.push(p.y);
+          dataZ.push(p.z);
+        });
       }
 
-function latLonToXYZPOINT(lat, lon, depth) {
-    return latLonToXYZ(lat, lon, depth);
-}
-      
-      controls.target.set(pyramidPos.z, pyramidPos.y, pyramidPos.x);
+      const layout = {
+        title: "Accelerazione negli ultimi 10 minuti",
+        xaxis: { title: "Tempo (batch + indice)", tickangle: -45 },
+        yaxis: { title: "Valore (m/s²)" },
+        margin: { t: 50, l: 50, r: 10, b: 100 },
+        legend: { orientation: 'h', y: -0.3 }
+      };
 
-      // Creazione della griglia
-      const gridSize = 25;
-      const gridDivisions = 5;
-      const gridHelper = new THREE.GridHelper(gridSize, gridDivisions, 0x000000, 0x000000);
+      const traces = [
+        { x: xAxis, y: dataX, type: 'scatter', mode: 'lines', name: 'X', line: { color: 'red' } },
+        { x: xAxis, y: dataY, type: 'scatter', mode: 'lines', name: 'Y', line: { color: 'green' } },
+        { x: xAxis, y: dataZ, type: 'scatter', mode: 'lines', name: 'Z', line: { color: 'blue' } },
+      ];
 
-      // Sposta la griglia al centro della piramide
-      gridHelper.position.set(pyramidPos.z, pyramidPos.y, pyramidPos.x);
-
-      scene.add(gridHelper);
-
-      // Aggiunta della luce
-      const light = new THREE.DirectionalLight(0xffffff, 5);
-      light.position.set(10, 20, 10); // Posiziona la luce dall'alto
-      light.castShadow = true; // Permette alla luce di proiettare ombre
-      scene.add(light);
-
-      // Miglioriamo la qualità dell'ombra
-      light.shadow.mapSize.width = 2048;
-      light.shadow.mapSize.height = 2048;
-      light.shadow.camera.near = 0.5;
-      light.shadow.camera.far = 50;
-
-      // Funzione per caricare il modello 3D con texture
-function load3DModel(modelPath, texturePath, position, scale) {
-    // Mostra il loader all'inizio
-    const loaderOverlay = document.getElementById("loader-overlay");
-    loaderOverlay.classList.remove("d-none");
-    loaderOverlay.classList.add("d-flex");
-
-    const loader = new GLTFLoader();
-    const textureLoader = new THREE.TextureLoader();
-
-    loader.load(
-        modelPath,
-        (gltf) => {
-            const model = gltf.scene;
-
-            // Caricamento della texture
-            const textureLoader = new THREE.TextureLoader();
-            const texture = textureLoader.load(texturePath, () => {
-                console.log("Texture caricata con successo");
-            });
-
-            // Calcolo della scala e posizionamento del modello
-            const box = new THREE.Box3().setFromObject(model);
-            const size = new THREE.Vector3();
-            box.getSize(size);
-
-            const gridSize = 27;
-            const scaleFactor = gridSize / Math.max(size.x, size.z);
-            model.scale.set(scaleFactor, scaleFactor, scaleFactor);
-            model.rotation.y = -Math.PI / 2; // 90° in senso orario sull'asse Y
-            model.position.set(pyramidPos.z + 2, pyramidPos.y, pyramidPos.x + 0.3);
-
-            // Aggiunge il modello alla scena
-            scene.add(model);
-
-            // Nasconde il loader dopo il caricamento
-            loaderOverlay.classList.remove("d-flex");
-            loaderOverlay.classList.add("d-none");
-        },
-        (xhr) => {
-            // Aggiornamento del progresso di caricamento (opzionale)
-            let percent = (xhr.loaded / xhr.total) * 100;
-            console.log(`Caricamento: ${percent.toFixed(2)}%`);
-        },
-        (error) => {
-            console.error("Errore nel caricamento del modello 3D:", error);
-            loaderOverlay.classList.remove("d-flex");
-            loaderOverlay.classList.add("d-none"); // Nasconde il loader anche in caso di errore
-        }
-    );
-}
-
-
-
-      // Percorsi dei file (assicurati che siano corretti)
-      const modelPath = '/3dmodels/scene.gltf';
-      const texturePath = '/3dmodels/textures/TerrainNodeMaterial_baseColorNosea.jpg';
-
-      // Carichiamo il modello nella posizione della piramide
-      load3DModel(modelPath, texturePath, pyramidPos, -0.1);
-
-      function animate() {
-        requestAnimationFrame(animate);
-        controls.update();
-        renderer.render(scene, camera);
-      }
-      animate();
-
-
-      // Impostiamo i parametri per la linea di profondità
-      const maxDepth = 8;      // profondità massima in km
-      const depthScale = 2;    // 1 km corrisponde a 2 unità lungo l'asse y
-
-      // Creazione della linea verticale per la profondità (da y=0 a y = -maxDepth*depthScale)
-      const depthLineGeometry = new THREE.BufferGeometry().setFromPoints([
-        new THREE.Vector3(0, 0, 0),
-        new THREE.Vector3(0, -maxDepth * depthScale, 0)
-      ]);
-      const depthLineMaterial = new THREE.LineBasicMaterial({ color: 0x000000 });
-      const depthLine = new THREE.Line(depthLineGeometry, depthLineMaterial);
-      scene.add(depthLine);
-      depthLine.position.set(pyramidPos.z, pyramidPos.y, pyramidPos.x);
-
-      // Funzione per aggiungere un tick mark orizzontale
-      // Carica il font prima di creare i tick mark
-      const loaderTre = new FontLoader();
-      
-loaderTre.load('fonts/helvetiker_regular.typeface.json', (font) => {
-
-  function addTickMark(y, index, tickLength = 2) {
-    const halfTick = tickLength / 2;
-
-    // Creazione della linea orizzontale
-    const tickGeometry = new THREE.BufferGeometry().setFromPoints([
-      new THREE.Vector3(-halfTick, y, 0),
-      new THREE.Vector3(halfTick, y, 0)
-    ]);
-    const tickMaterial = new THREE.LineBasicMaterial({ color: 0xDDDDDD });
-    const tick = new THREE.Line(tickGeometry, tickMaterial);
-    scene.add(tick);
-    tick.position.set(pyramidPos.z, pyramidPos.y, pyramidPos.x);
-
-    // Non mostrare il numero sulla prima linea (superficie)
-    if (index > 1) {
-      // Creazione del numero accanto alla linea
-      const textGeometry = new TextGeometry((index - 1).toString(), {
-        font: font,
-        size: 0.8,      // Dimensione del numero
-        height: 0.1,
-        depth:0.1  // Profondità minima per il testo 3D
-      });
-      const textMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
-      const textMesh = new THREE.Mesh(textGeometry, textMaterial);
-
+      Plotly.newPlot('chart', traces, layout, {responsive: true});
     }
-  }
 
-  // Creiamo i tick mark numerati (partendo da 2 invece che 1)
-  for (let i = 0; i <= maxDepth; i++) {
-    const y = -i * depthScale;
-    addTickMark(y, i + 1); // Il numero 1 viene ignorato e la numerazione parte da 2
-  }
-});
-      // Impostazione del centro della mappa:
-      // Consideriamo lat=40 e lon=10 come centro, che verranno mappati su (0,0,0)
-     
-
-      
-
-
-      function isValidCoordinate(lat, lon, depth) {
-        return !isNaN(lat) && !isNaN(lon) && !isNaN(depth) &&
-               lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180;
-      }
-
-      function getMagnitude(earthquake) {
-        return earthquake.magnitudos?.[0]?.value ?? null;
-      }
-      // Carica il font (assicurati di avere il file font corretto nella cartella indicata)
-      const loader = new FontLoader();
-      loader.load('fonts/helvetiker_regular.typeface.json', (font) => {
-      const textGeometry = new TextGeometry('Terremoti Campi flegrei', {
-        font: font,
-        size: 4,          // dimensione complessiva ridotta
-        height: 5,      // profondità ridotta (ulteriore riduzione del 90% rispetto a 0.05 ad esempio)
-        curveSegments: 12,
-        bevelEnabled: true,
-        bevelThickness: 0.001,
-        bevelSize: 0.001,
-        bevelOffset: 0,
-        bevelSegments: 3,
-        depth:0.2
-      });
-      const textMaterial = new THREE.MeshBasicMaterial({ color: 0xFEFEFE });
-      const textMesh = new THREE.Mesh(textGeometry, textMaterial);
-
-      // Se serve, applica un'ulteriore scala per ridurre ulteriormente la dimensione
-      textMesh.scale.set(0.5, 0.5, 0.5);
-
-      // Ruota la scritta in modo che l'estrusione segua l'asse Y (orientata verso l'alto)
-      textMesh.rotation.x = - Math.PI / 2;
-
-      // Posiziona la scritta dove desideri, ad esempio vicino al bordo della griglia
-      //textMesh.position.set(10, 0, -15);
-      scene.add(textMesh);
-      textMesh.position.set(pyramidPos.z-15, pyramidPos.y, pyramidPos.x+18);
-      
-    });
-
-      function addPyramid(lat, lon, depth, color) {
-          // Converti le coordinate geografiche in coordinate 3D
-          const { x, y, z } = latLonToXYZPOINT(lat, lon, depth);
-          console.log(x, y, z)
-
-          // Geometria della piramide (Tetraedro)
-          const pyramidGeometry = new THREE.ConeGeometry(0.1, 1.4, 4); // Base 2, altezza 4, 4 lati
-          const pyramidMaterial = new THREE.MeshBasicMaterial({ color: new THREE.Color(color), wireframe: false });
-          const pyramid = new THREE.Mesh(pyramidGeometry, pyramidMaterial);
-
-          // Posizioniamo la piramide
-          pyramid.position.set(z, y, x);
-
-          // Ruotiamo la piramide per allinearla meglio
-          pyramid.rotation.y = Math.PI / 4; // Rotazione di 45° per farla sembrare più bilanciata
-
-          // Aggiungiamo la piramide alla scena
-          scene.add(pyramid);
-        
-      }
-
-      // Aggiungi una piramide con un colore specifico
-    
-      //addPyramid(40.8269, 14.1405, 0,0xEEff00); // giallo solfatara
-      //addPyramid(40.8352, 14.0877, 0,0x00ff00); // verde montenuovo
-      //addPyramid(40.7948 , 14.1615174 , 0,0x00ff00); // verde montenuovo
-      let spheres = [];
-      // Caricamento dei dati dei terremoti
-      let yearSelected = document.getElementById("yearSelect").value;
-      let jsonFileYear = yearSelected === "2025" ? "events25.json" : "events24.json"; // Seleziona il file corretto
-      console.log(jsonFileYear)
-    
-      document.getElementById("yearSelect").addEventListener("change", function () {
-          const selectedYear = this.value; // Ottieni l'anno selezionato
-          const jsonFile = selectedYear === "2025" ? "events25.json" : "events24.json"; // Seleziona il file corretto
-
-          loadEarthquakeData(jsonFile);
-      });
-
-// Funzione per rimuovere tutte le sfere dalla scena
-function clearEarthquakeSpheres() {
-    spheres.forEach(sphere => {
-        scene.remove(sphere);
-        sphere.geometry.dispose(); // Libera memoria
-        sphere.material.dispose();
-    });
-    spheres = []; // Svuota l'array
-}
-function getColorForMagnitude(magnitude) {
-    // Definizione dei colori principali
-  const colors = [
-    { mag: 1, color: new THREE.Color(0x00c8ff) }, // Celeste
-    { mag: 2, color: new THREE.Color(0x00ff00) }, // Verde
-    { mag: 3, color: new THREE.Color(0xffa500) }, // Arancione
-    { mag: 4, color: new THREE.Color(0xff0000) }, // Rosso
-    { mag: 5, color: new THREE.Color(0x000000) }  // Nero
-  ];
-
-  // Se la magnitudo è minore o uguale a 1, restituisci celeste
-  if (magnitude <= 1) return colors[0].color;
-  // Se la magnitudo è maggiore o uguale a 5, restituisci nero
-  if (magnitude >= 5) return colors[colors.length - 1].color;
-
-  // Trova i due colori tra cui interpolare
-  for (let i = 0; i < colors.length - 1; i++) {
-    if (magnitude >= colors[i].mag && magnitude < colors[i + 1].mag) {
-      let t = (magnitude - colors[i].mag) / (colors[i + 1].mag - colors[i].mag);
-      return new THREE.Color().lerpColors(colors[i].color, colors[i + 1].color, t);
-    }
-  }
-  
-  return new THREE.Color(0xffffff); // Bianco di fallback (non dovrebbe mai succedere)
-}
-// Funzione per caricare i dati dei terremoti
-function loadEarthquakeData(jsonFile, minMagnitude = 0, maxMagnitude = 5) {
-    fetch(jsonFile)
-        .then(response => response.json())
-        .then(data => {
-            if (!Array.isArray(data)) {
-                console.error("❌ Errore: Il JSON non è un array.");
-                return;
-            }
-
-            clearEarthquakeSpheres(); // 🔥 Rimuove le vecchie sfere prima di caricare i nuovi dati
-
-            data.forEach(eq => {
-                const { latitude, longitude, depth } = eq.location;
-                if (!isValidCoordinate(latitude, longitude, depth)) return;
-
-                const { x, y, z } = latLonToXYZPOINT(latitude, longitude, depth);
-                if (isNaN(x) || isNaN(y) || isNaN(z)) return;
-
-                const magnitude = getMagnitude(eq);
-                if (magnitude < minMagnitude || magnitude > maxMagnitude) return; // 🔥 Filtra per magnitudo
-
-                // Calcola il colore in base alla magnitudo
-                const color = getColorForMagnitude(magnitude);
-
-                // Crea la sfera del terremoto
-                const geometry = new THREE.SphereGeometry(magnitude * 0.03, 16, 16);
-                const material = new THREE.MeshBasicMaterial({ color });
-                const sphere = new THREE.Mesh(geometry, material);
-
-                sphere.position.set(z, y, x);
-                sphere.userData.magnitude = magnitude; // 🔥 Salviamo la magnitudo per eventuali altri filtri
-
-                scene.add(sphere);
-                spheres.push(sphere);
-            });
-        })
-        .catch(error => console.error("❌ Errore nel caricamento del JSON:", error));
-}
-
-
-// ✅ Carichiamo i dati iniziali (2025 di default)
-loadEarthquakeData(jsonFileYear);
-        document.getElementById("sizeSlider").addEventListener("input", (event) => {
-          const scaleFactor = parseFloat(event.target.value);
-          
-          spheres.forEach(sphere => {
-            sphere.scale.set(scaleFactor, scaleFactor, scaleFactor);
-          });
-        });
-        //x=75.29, y=2.41, z=-87.57
-      camera.position.set(-5,2, -5.57);
-      camera.lookAt(0,2, 0);
-     
-
-      function animate() {
-        requestAnimationFrame(animate);
-        controls.update();
-        renderer.render(scene, camera);
-      }
-      animate();
-
-     
-      
-      
-      
-        const minMagSelect = document.getElementById("magnitudeMin");
-        const maxMagSelect = document.getElementById("magnitudeMax");
-        const applyFilterBtn = document.getElementById("applyFilter");
-        
-        // Applica il filtro alla visualizzazione
-        applyFilterBtn.addEventListener("click", () => {
-          const minMag = parseFloat(minMagSelect.value);
-          const maxMag = parseFloat(maxMagSelect.value);
-          
-          if (minMag > maxMag) {
-            alert("La magnitudo minima non può essere maggiore della massima!");
-            return;
-          }
-          let yearSelected = document.getElementById("yearSelect").value;
-          let jsonFileYear = yearSelected === "2025" ? "events25.json" : "events24.json"; // Seleziona il file corretto
-          console.log(jsonFileYear)
-          loadEarthquakeData(jsonFileYear,minMag, maxMag);
-          console.log(yearSelected)
-        });
-
-        const filterBar = document.getElementById("filterBar");
-        const toggleFiltersBtn = document.getElementById("toggleFilters");
-
-        toggleFiltersBtn.addEventListener("click", () => {
-            if (filterBar.classList.contains("d-none")) {
-                // Mostra i filtri
-                filterBar.classList.remove("d-none");
-                filterBar.classList.add("d-block");
-                toggleFiltersBtn.innerHTML = '<i class="bi bi-x-lg"></i> Chiudi';
-            } else {
-                // Nascondi i filtri
-                filterBar.classList.remove("d-block");
-                filterBar.classList.add("d-none");
-                toggleFiltersBtn.innerHTML = '<i class="bi bi-funnel-fill"></i> Filtri';
-            }
-        });
-
-      
-    });
-
-    
+    fetchAndPlot();
+    setInterval(fetchAndPlot, 10000); // aggiorna ogni 10 secondi
   </script>
 </body>
 </html>
