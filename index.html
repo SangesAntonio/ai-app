@@ -55,7 +55,7 @@
 
       const allTimestamps = Object.keys(data).sort();
       const now = new Date().getTime();
-      const twentyMinutesAgo = now - (20 * 60 * 1000);
+      const twentyMinutesAgo = now - (5 * 60 * 1000);
 
       const xAxis = [];
       const dataX = [], dataY = [], dataZ = [];
@@ -93,7 +93,7 @@
     }
 
     fetchAndPlot();
-    setInterval(fetchAndPlot, 10000);
+    setInterval(fetchAndPlot, 30000);
   </script>
 </body>
 </html>
