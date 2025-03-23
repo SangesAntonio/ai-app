@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dati Accelerometro</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f4f4f4;
+    }
+    header {
+      background: #0077ff;
+      color: white;
+      padding: 1rem;
+      text-align: center;
+    }
+    main {
+      padding: 2rem;
+    }
+    canvas {
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      max-width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Grafico Accelerometro</h1>
+    <p>Dati raccolti da Firebase (ultimi batch)</p>
+  </header>
+  <main>
+    <canvas id="accChart" height="100"></canvas>
+  </main>
+
+  <script>
+    const url = "https://api-sismografo-default-rtdb.europe-west1.firebasedatabase.app/batch_acc.json";
+
+    async function fetchData() {
+      const res = await fetch(url);
+      const data = await res.json();
+
+      const labels = [];
+      const x = [], y = [], z = [];
+
+      for (const key in data) {
+        const letture = data[key].letture;
+        if (!letture) continue;
+
+        letture.forEach((p, i) => {
+          labels.push(i);
+          x.push(p.x);
+          y.push(p.y);
+          z.push(p.z);
+        });
+      }
+
+      return { labels, x, y, z };
+    }
+
+    async function renderChart() {
+      const { labels, x, y, z } = await fetchData();
+
+      new Chart(document.getElementById("accChart"), {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: 'X',
+              data: x,
+              borderColor: 'red',
+              fill: false,
+              tension: 0.2
+            },
+            {
+              label: 'Y',
+              data: y,
+              borderColor: 'green',
+              fill: false,
+              tension: 0.2
+            },
+            {
+              label: 'Z',
+              data: z,
+              borderColor: 'blue',
+              fill: false,
+              tension: 0.2
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: {
+              beginAtZero: false
+            }
+          }
+        }
+      });
+    }
+
+    renderChart();
+  </script>
+</body>
+</html>

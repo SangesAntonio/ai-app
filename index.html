@@ -33,7 +33,7 @@
   <div id="graficoContainer"></div>
 <!-- Pulsante per mostrare/nascondere i filtri -->
 <!-- Pulsante per mostrare/nascondere i filtri (in basso a destra) -->
-<button id="toggleFilters" class="btn  btn-light btn-sm position-fixed bottom-0 end-0 m-2" style="z-index: 1100;">
+<button id="toggleFilters" class="btn  btn-light btn-sm position-fixed bottom-50 end-0 m-2" style="z-index: 1100;">
   <i class="bi bi-funnel-fill"></i> Filtri
 </button>
 
@@ -122,21 +122,43 @@
 
   <!-- Footer con crediti -->
   <footer style="
-    position: fixed;
-    bottom: 0;
-    width: 100%;
-    background: rgba(0, 0, 0, 0.8);
-    color: white;
-    text-align: left;
-    padding: 10px;
-    font-size: 9px;
-  ">
-    <p>
-      This work is based on "Campi Flegrei, Italy" (https://sketchfab.com/3d-models/campi-flegrei-italy-32129d36a7804a40b941b0a79ad01633) by Sara Carena (https://sketchfab.com/saracarena1) licensed under CC-BY-NC-SA-4.0 (http://creativecommons.org/licenses/by-nc-sa/4.0/) |<br> 📡 Dati sui terremoti da 
-      <a href="http://terremoti.ov.ingv.it/gossip/flegrei/2025/index.html" target="_blank" style="color: #ffcc00;">INGV</a> 
-      e altre fonti ufficiali. Sviluppo e design di Antonio Sanges
-    </p>
-  </footer>
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  text-align: left;
+  padding: 10px;
+  font-size: 9px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+">
+<p style="margin: 0; max-width: 80%;">
+  This work is based on 
+  <a href="https://sketchfab.com/3d-models/campi-flegrei-italy-32129d36a7804a40b941b0a79ad01633" target="_blank" style="color: #ffcc00;">"Campi Flegrei, Italy"</a> 
+  by 
+  <a href="https://sketchfab.com/saracarena1" target="_blank" style="color: #ffcc00;">Sara Carena</a> licensed under CC-BY-NC-SA-4.0 |
+  📡 Dati sui terremoti da 
+  <a href="http://terremoti.ov.ingv.it/gossip/flegrei/2025/index.html" target="_blank" style="color: #ffcc00;">INGV</a> 
+  e altre fonti ufficiali. Sviluppo e design di Antonio Sanges
+</p>
+
+<button onclick="location.href='public/accelerometro'" style="
+  background-color: #0077ff;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  font-size: 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-top: 5px;
+">
+  📈 Accelerometro
+</button>
+</footer>
+
   <script type="module">
     document.getElementById('legendToggle').addEventListener('click', function() {
       const content = document.getElementById('legendContent');
