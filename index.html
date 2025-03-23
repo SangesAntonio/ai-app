@@ -68,7 +68,7 @@
         if (batchTime < twentyMinutesAgo) continue;
 
         batch.letture.forEach((p, i) => {
-          xAxis.push(''); // nascondi etichette x per evitare sovraccarico
+          xAxis.push(xAxis.length); // nascondi etichette x per evitare sovraccarico
           dataX.push(p.x);
           dataY.push(p.y);
           dataZ.push(p.z);
