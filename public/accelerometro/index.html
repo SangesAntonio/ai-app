@@ -96,7 +96,7 @@
     <div id="offlineAlert" class="offline">❌ Sensore offline - nessun dato recente ricevuto</div>
     <div class="note">
       Visualizzazione dinamica dei rilevamenti. Il grafico si aggiorna automaticamente ogni 20 secondi.<br>
-      Le accelerazioni X e Y sono amplificate ×2.5 per una migliore leggibilità.
+      Le accelerazioni X e Y sono amplificate ×5.5 per una migliore leggibilità.
     </div>
     <a href="javascript:history.back()" class="back-button">⬅️ Visualizza terremoti</a>
   </main>
@@ -104,7 +104,7 @@
   <script>
     const url = "https://api-sismografo-default-rtdb.europe-west1.firebasedatabase.app/batch_acc.json";
     let selectedMinutes = 5;
-    const amplificationFactor = 2.5;
+    const amplificationFactor = 5.5;
 
     document.getElementById('rangeSelector').addEventListener('change', function () {
       selectedMinutes = parseInt(this.value);
