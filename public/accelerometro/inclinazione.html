@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Livella</title>
+  <style>
+    body {
+      background: #f0f0f0;
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    canvas {
+      background: white;
+      border: 2px solid #ccc;
+      border-radius: 50%;
+    }
+    .back-button {
+      margin-top: 20px;
+      text-decoration: none;
+      color: white;
+      background: #0077ff;
+      padding: 10px 20px;
+      border-radius: 5px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="livella" width="300" height="300"></canvas>
+  <a href="/index.html" class="back-button">⬅️ Torna al grafico</a>
+
+  <script>
+    const canvas = document.getElementById('livella');
+    const ctx = canvas.getContext('2d');
+    const url = "https://api-sismografo-default-rtdb.europe-west1.firebasedatabase.app/batch_acc.json";
+
+    function drawBubble(x, y) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // cerchio esterno
+      ctx.beginPath();
+      ctx.arc(150, 150, 140, 0, 2 * Math.PI);
+      ctx.strokeStyle = '#666';
+      ctx.lineWidth = 4;
+      ctx.stroke();
+
+      // croce centrale
+      ctx.beginPath();
+      ctx.moveTo(150, 10);
+      ctx.lineTo(150, 290);
+      ctx.moveTo(10, 150);
+      ctx.lineTo(290, 150);
+      ctx.strokeStyle = '#ddd';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // bolla
+      ctx.beginPath();
+      ctx.arc(150 + x, 150 + y, 20, 0, 2 * Math.PI);
+      ctx.fillStyle = 'rgba(0,150,255,0.6)';
+      ctx.fill();
+      ctx.strokeStyle = '#0077ff';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+
+    async function fetchTilt() {
+      const res = await fetch(url);
+      const data = await res.json();
+      const keys = Object.keys(data).sort();
+      const last = data[keys[keys.length - 1]];
+      const letture = last.letture;
+      const p = letture[letture.length - 1];
+
+      const roll = Math.atan2(p.y, p.z) * 180 / Math.PI;
+      const pitch = Math.atan2(-p.x, Math.sqrt(p.y * p.y + p.z * p.z)) * 180 / Math.PI;
+
+      // mappa inclinazione su raggio 100 max
+      const x = pitch / 45 * 100;
+      const y = roll / 45 * 100;
+
+      drawBubble(x, y);
+    }
+
+    fetchTilt();
+    setInterval(fetchTilt, 3000);
+  </script>
+</body>
+</html>
