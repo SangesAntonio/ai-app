@@ -42,7 +42,7 @@
   <main>
     <div id="chart"></div>
     <div class="note">
-      Visualizzazione degli ultimi 20 minuti di rilevamenti. Il grafico si aggiorna automaticamente ogni 10 secondi.
+      Visualizzazione degli ultimi 5 minuti di rilevamenti. Il grafico si aggiorna automaticamente ogni 30 secondi.
     </div>
   </main>
 
@@ -76,7 +76,7 @@
       }
 
       const layout = {
-        title: "Accelerazione negli ultimi 20 minuti",
+        title: "Accelerazione negli ultimi 5 minuti",
         xaxis: { title: "", showticklabels: false },
         yaxis: { title: "Valore (m/s²)", rangemode: 'tozero', autorange: false, range: [-2, 12] },
         margin: { t: 50, l: 50, r: 10, b: 50 },
