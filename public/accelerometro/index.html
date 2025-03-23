@@ -95,7 +95,8 @@
     <div id="chart"></div>
     <div id="offlineAlert" class="offline">❌ Sensore offline - nessun dato recente ricevuto</div>
     <div class="note">
-      Visualizzazione dinamica dei rilevamenti. Il grafico si aggiorna automaticamente ogni 20 secondi.
+      Visualizzazione dinamica dei rilevamenti. Il grafico si aggiorna automaticamente ogni 20 secondi.<br>
+      Le accelerazioni X e Y sono amplificate ×2.5 per una migliore leggibilità.
     </div>
     <a href="javascript:history.back()" class="back-button">⬅️ Visualizza terremoti</a>
   </main>
@@ -103,7 +104,7 @@
   <script>
     const url = "https://api-sismografo-default-rtdb.europe-west1.firebasedatabase.app/batch_acc.json";
     let selectedMinutes = 5;
-    let lastUpdateTime = 0;
+    const amplificationFactor = 2.5;
 
     document.getElementById('rangeSelector').addEventListener('change', function () {
       selectedMinutes = parseInt(this.value);
@@ -142,22 +143,25 @@
         if (batchTime < rangeAgo) continue;
 
         batch.letture.forEach((p) => {
+          const amplifiedX = p.x * amplificationFactor;
+          const amplifiedY = p.y * amplificationFactor;
+
           xAxis.push(counter);
           zAxis.push(p.z);
 
-          if (p.x > 2 || p.x < -2) {
+          if (amplifiedX > 2 || amplifiedX < -2) {
             xNorm.push(null);
-            xAlert.push(p.x);
+            xAlert.push(amplifiedX);
           } else {
-            xNorm.push(p.x);
+            xNorm.push(amplifiedX);
             xAlert.push(null);
           }
 
-          if (p.y > 2 || p.y < -2) {
+          if (amplifiedY > 2 || amplifiedY < -2) {
             yNorm.push(null);
-            yAlert.push(p.y);
+            yAlert.push(amplifiedY);
           } else {
-            yNorm.push(p.y);
+            yNorm.push(amplifiedY);
             yAlert.push(null);
           }
 
@@ -166,9 +170,9 @@
       }
 
       const layout = {
-        title: `Accelerazione negli ultimi ${selectedMinutes} minuti`,
+        title: `Accelerazione negli ultimi ${selectedMinutes} minuti (X,Y amplificati ×${amplificationFactor})`,
         xaxis: { title: "Campionamenti recenti", showticklabels: false },
-        yaxis: { title: "Valore (m/s²)", rangemode: 'tozero', autorange: false, range: [-4, 12] },
+        yaxis: { title: "Valore (m/s²)", rangemode: 'tozero', autorange: false, range: [-10, 20] },
         margin: { t: 80, l: 50, r: 10, b: 50 },
         legend: { orientation: 'h', y: -0.3 },
         height: window.innerHeight * 0.6
