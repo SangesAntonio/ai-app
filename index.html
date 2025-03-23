@@ -93,7 +93,11 @@
       const rangeAgo = now - (selectedMinutes * 60 * 1000);
 
       const xAxis = [];
-      const dataX = [], dataY = [], dataZ = [];
+      const xNorm = [], xAlert = [];
+      const yNorm = [], yAlert = [];
+      const zAxis = [];
+
+      let counter = 0;
 
       for (let key of allTimestamps) {
         const batch = data[key];
@@ -103,26 +107,47 @@
         if (batchTime < rangeAgo) continue;
 
         batch.letture.forEach((p) => {
-          xAxis.push(xAxis.length);
-          dataX.push(p.x);
-          dataY.push(p.y);
-          dataZ.push(p.z);
+          xAxis.push(counter);
+          zAxis.push(p.z);
+
+          // Soglie per X e Y: ±2.0 m/s²
+          if (p.x > 2 || p.x < -2) {
+            xNorm.push(null);
+            xAlert.push(p.x);
+          } else {
+            xNorm.push(p.x);
+            xAlert.push(null);
+          }
+
+          if (p.y > 2 || p.y < -2) {
+            yNorm.push(null);
+            yAlert.push(p.y);
+          } else {
+            yNorm.push(p.y);
+            yAlert.push(null);
+          }
+
+          counter++;
         });
       }
 
       const layout = {
         title: `Accelerazione negli ultimi ${selectedMinutes} minuti`,
         xaxis: { title: "Campionamenti recenti", showticklabels: false },
-        yaxis: { title: "Valore (m/s²)", rangemode: 'tozero', autorange: false, range: [-2, 12] },
+        yaxis: { title: "Valore (m/s²)", rangemode: 'tozero', autorange: false, range: [-4, 12] },
         margin: { t: 80, l: 50, r: 10, b: 50 },
         legend: { orientation: 'h', y: -0.3 },
         height: window.innerHeight * 0.6
       };
 
       const traces = [
-        { x: xAxis, y: dataX, type: 'scatter', mode: 'lines', name: 'X', line: { color: 'red' } },
-        { x: xAxis, y: dataY, type: 'scatter', mode: 'lines', name: 'Y', line: { color: 'green' } },
-        { x: xAxis, y: dataZ, type: 'scatter', mode: 'lines', name: 'Z', line: { color: 'blue' } },
+        { x: xAxis, y: xNorm, type: 'scatter', mode: 'lines', name: 'X', line: { color: 'red' } },
+        { x: xAxis, y: xAlert, type: 'scatter', mode: 'markers', name: 'X fuori soglia', marker: { color: 'red', size: 6, symbol: 'circle-open' } },
+
+        { x: xAxis, y: yNorm, type: 'scatter', mode: 'lines', name: 'Y', line: { color: 'green' } },
+        { x: xAxis, y: yAlert, type: 'scatter', mode: 'markers', name: 'Y fuori soglia', marker: { color: 'green', size: 6, symbol: 'circle-open' } },
+
+        { x: xAxis, y: zAxis, type: 'scatter', mode: 'lines', name: 'Z', line: { color: 'blue' } }
       ];
 
       Plotly.newPlot('chart', traces, layout, {responsive: true});
