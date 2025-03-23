@@ -77,7 +77,7 @@
 <body>
   <header>
     <h1>Grafico Accelerometro (Arcofelice)</h1>
-    <p>Dati dal sensore aggiornati ogni 30 secondi</p>
+    <p>Dati dal sensore aggiornati ogni 20 secondi</p>
   </header>
   <main>
     <div class="selector">
@@ -89,10 +89,13 @@
         <option value="20">20 minuti</option>
       </select>
     </div>
+    <div id="countdown" style="text-align: center; font-size: 14px; color: #333; margin: 10px 0;">
+      🔄 Prossimo aggiornamento tra: <span id="seconds">20</span>s
+    </div>
     <div id="chart"></div>
     <div id="offlineAlert" class="offline">❌ Sensore offline - nessun dato recente ricevuto</div>
     <div class="note">
-      Visualizzazione dinamica dei rilevamenti. Il grafico si aggiorna automaticamente ogni 30 secondi.
+      Visualizzazione dinamica dei rilevamenti. Il grafico si aggiorna automaticamente ogni 20 secondi.
     </div>
     <a href="javascript:history.back()" class="back-button">⬅️ Visualizza terremoti</a>
   </main>
@@ -185,7 +188,17 @@
     }
 
     fetchAndPlot();
-    setInterval(fetchAndPlot, 30000);
+    setInterval(fetchAndPlot, 20000);
+    let secondsLeft = 20;
+    const countdownSpan = document.getElementById("seconds");
+
+    setInterval(() => {
+      secondsLeft--;
+      if (secondsLeft <= 0) {
+        secondsLeft = 20;
+      }
+      countdownSpan.textContent = secondsLeft;
+    }, 1000);
   </script>
 </body>
 </html>
