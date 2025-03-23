@@ -52,6 +52,14 @@
       border-radius: 5px;
       border: 1px solid #ccc;
     }
+    .offline {
+      color: red;
+      text-align: center;
+      font-weight: bold;
+      font-size: 1.1rem;
+      margin-top: 1rem;
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -70,6 +78,7 @@
       </select>
     </div>
     <div id="chart"></div>
+    <div id="offlineAlert" class="offline">❌ Sensore offline - nessun dato recente ricevuto</div>
     <div class="note">
       Visualizzazione dinamica dei rilevamenti. Il grafico si aggiorna automaticamente ogni 30 secondi.
     </div>
@@ -78,6 +87,7 @@
   <script>
     const url = "https://api-sismografo-default-rtdb.europe-west1.firebasedatabase.app/batch_acc.json";
     let selectedMinutes = 5;
+    let lastUpdateTime = 0;
 
     document.getElementById('rangeSelector').addEventListener('change', function () {
       selectedMinutes = parseInt(this.value);
@@ -91,6 +101,15 @@
       const allTimestamps = Object.keys(data).sort();
       const now = new Date().getTime();
       const rangeAgo = now - (selectedMinutes * 60 * 1000);
+
+      const latestEntry = data[allTimestamps[allTimestamps.length - 1]];
+      const latestTimestamp = new Date(latestEntry?.end_timestamp).getTime();
+
+      if (!latestTimestamp || now - latestTimestamp > 90000) {
+        document.getElementById("offlineAlert").style.display = "block";
+      } else {
+        document.getElementById("offlineAlert").style.display = "none";
+      }
 
       const xAxis = [];
       const xNorm = [], xAlert = [];
@@ -110,7 +129,6 @@
           xAxis.push(counter);
           zAxis.push(p.z);
 
-          // Soglie per X e Y: ±2.0 m/s²
           if (p.x > 2 || p.x < -2) {
             xNorm.push(null);
             xAlert.push(p.x);
