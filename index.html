@@ -26,15 +26,24 @@
       border-radius: 10px;
       box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     }
+    .note {
+      text-align: center;
+      font-size: 0.9rem;
+      color: #555;
+      margin-top: 1rem;
+    }
   </style>
 </head>
 <body>
   <header>
     <h1>Grafico Accelerometro</h1>
-    <p>Ultimi 10 minuti di dati da Firebase</p>
+    <p>Dati da Firebase aggiornati ogni 10 secondi</p>
   </header>
   <main>
     <div id="chart"></div>
+    <div class="note">
+      Visualizzazione degli ultimi 20 minuti di rilevamenti. Il grafico si aggiorna automaticamente ogni 10 secondi.
+    </div>
   </main>
 
   <script>
@@ -46,7 +55,7 @@
 
       const allTimestamps = Object.keys(data).sort();
       const now = new Date().getTime();
-      const tenMinutesAgo = now - (10 * 60 * 1000);
+      const twentyMinutesAgo = now - (20 * 60 * 1000);
 
       const xAxis = [];
       const dataX = [], dataY = [], dataZ = [];
@@ -56,11 +65,10 @@
         if (!batch || !batch.letture || !batch.end_timestamp) continue;
 
         const batchTime = new Date(batch.end_timestamp).getTime();
-        if (batchTime < tenMinutesAgo) continue; // salta se troppo vecchio
+        if (batchTime < twentyMinutesAgo) continue;
 
         batch.letture.forEach((p, i) => {
-          const label = `${batch.end_timestamp} [${i}]`;
-          xAxis.push(label);
+          xAxis.push(''); // nascondi etichette x per evitare sovraccarico
           dataX.push(p.x);
           dataY.push(p.y);
           dataZ.push(p.z);
@@ -68,10 +76,10 @@
       }
 
       const layout = {
-        title: "Accelerazione negli ultimi 10 minuti",
-        xaxis: { title: "Tempo (batch + indice)", tickangle: -45 },
-        yaxis: { title: "Valore (m/s²)" },
-        margin: { t: 50, l: 50, r: 10, b: 100 },
+        title: "Accelerazione negli ultimi 20 minuti",
+        xaxis: { title: "", showticklabels: false },
+        yaxis: { title: "Valore (m/s²)", rangemode: 'tozero', autorange: false, range: [-2, 12] },
+        margin: { t: 50, l: 50, r: 10, b: 50 },
         legend: { orientation: 'h', y: -0.3 }
       };
 
@@ -85,7 +93,7 @@
     }
 
     fetchAndPlot();
-    setInterval(fetchAndPlot, 10000); // aggiorna ogni 10 secondi
+    setInterval(fetchAndPlot, 10000);
   </script>
 </body>
 </html>
