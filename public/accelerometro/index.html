@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dati Accelerometro</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -19,93 +19,173 @@
       text-align: center;
     }
     main {
-      padding: 2rem;
+      padding: 1rem;
     }
-    canvas {
+    .selector {
+      text-align: center;
+      font-size: 0.95rem;
+      color: #555;
+      margin: 0.5rem auto 1rem auto;
+      width: 100%;
+      max-width: 90%;
+    }
+    #chart {
       background: white;
       border-radius: 10px;
       box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      height: 60vh;
+      width: 100%;
       max-width: 100%;
+      overflow-x: auto;
+    }
+    .note {
+      text-align: center;
+      font-size: 0.95rem;
+      color: #555;
+      margin: 1rem auto;
+      width: 100%;
+      max-width: 90%;
+    }
+    select {
+      padding: 6px 10px;
+      font-size: 1rem;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    .offline {
+      color: red;
+      text-align: center;
+      font-weight: bold;
+      font-size: 1.1rem;
+      margin-top: 1rem;
+      display: none;
+    }
+    .back-button {
+      display: block;
+      margin: 1rem auto;
+      text-align: center;
+      text-decoration: none;
+      color: white;
+      background: #0077ff;
+      padding: 10px 20px;
+      border-radius: 5px;
+      width: fit-content;
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
   <header>
     <h1>Grafico Accelerometro</h1>
-    <p>Dati raccolti da Firebase (ultimi batch)</p>
+    <p>Dati da Firebase aggiornati ogni 30 secondi</p>
   </header>
   <main>
-    <canvas id="accChart" height="100"></canvas>
+    <div class="selector">
+      <label for="rangeSelector">Visualizza ultimi:</label>
+      <select id="rangeSelector">
+        <option value="1">1 minuto</option>
+        <option value="5" selected>5 minuti</option>
+        <option value="10">10 minuti</option>
+        <option value="20">20 minuti</option>
+      </select>
+    </div>
+    <div id="chart"></div>
+    <div id="offlineAlert" class="offline">❌ Sensore offline - nessun dato recente ricevuto</div>
+    <div class="note">
+      Visualizzazione dinamica dei rilevamenti. Il grafico si aggiorna automaticamente ogni 30 secondi.
+    </div>
+    <a href="javascript:history.back()" class="back-button">⬅️ Visualizza terremoti</a>
   </main>
 
   <script>
     const url = "https://api-sismografo-default-rtdb.europe-west1.firebasedatabase.app/batch_acc.json";
+    let selectedMinutes = 5;
+    let lastUpdateTime = 0;
 
-    async function fetchData() {
+    document.getElementById('rangeSelector').addEventListener('change', function () {
+      selectedMinutes = parseInt(this.value);
+      fetchAndPlot();
+    });
+
+    async function fetchAndPlot() {
       const res = await fetch(url);
       const data = await res.json();
 
-      const labels = [];
-      const x = [], y = [], z = [];
+      const allTimestamps = Object.keys(data).sort();
+      const now = new Date().getTime();
+      const rangeAgo = now - (selectedMinutes * 60 * 1000);
 
-      for (const key in data) {
-        const letture = data[key].letture;
-        if (!letture) continue;
+      const latestEntry = data[allTimestamps[allTimestamps.length - 1]];
+      const latestTimestamp = new Date(latestEntry?.end_timestamp).getTime();
 
-        letture.forEach((p, i) => {
-          labels.push(i);
-          x.push(p.x);
-          y.push(p.y);
-          z.push(p.z);
+      if (!latestTimestamp || now - latestTimestamp > 90000) {
+        document.getElementById("offlineAlert").style.display = "block";
+      } else {
+        document.getElementById("offlineAlert").style.display = "none";
+      }
+
+      const xAxis = [];
+      const xNorm = [], xAlert = [];
+      const yNorm = [], yAlert = [];
+      const zAxis = [];
+
+      let counter = 0;
+
+      for (let key of allTimestamps) {
+        const batch = data[key];
+        if (!batch || !batch.letture || !batch.end_timestamp) continue;
+
+        const batchTime = new Date(batch.end_timestamp).getTime();
+        if (batchTime < rangeAgo) continue;
+
+        batch.letture.forEach((p) => {
+          xAxis.push(counter);
+          zAxis.push(p.z);
+
+          if (p.x > 2 || p.x < -2) {
+            xNorm.push(null);
+            xAlert.push(p.x);
+          } else {
+            xNorm.push(p.x);
+            xAlert.push(null);
+          }
+
+          if (p.y > 2 || p.y < -2) {
+            yNorm.push(null);
+            yAlert.push(p.y);
+          } else {
+            yNorm.push(p.y);
+            yAlert.push(null);
+          }
+
+          counter++;
         });
       }
 
-      return { labels, x, y, z };
+      const layout = {
+        title: `Accelerazione negli ultimi ${selectedMinutes} minuti`,
+        xaxis: { title: "Campionamenti recenti", showticklabels: false },
+        yaxis: { title: "Valore (m/s²)", rangemode: 'tozero', autorange: false, range: [-4, 12] },
+        margin: { t: 80, l: 50, r: 10, b: 50 },
+        legend: { orientation: 'h', y: -0.3 },
+        height: window.innerHeight * 0.6
+      };
+
+      const traces = [
+        { x: xAxis, y: xNorm, type: 'scatter', mode: 'lines', name: 'X', line: { color: 'red' } },
+        { x: xAxis, y: xAlert, type: 'scatter', mode: 'markers', name: 'X fuori soglia', marker: { color: 'red', size: 6, symbol: 'circle-open' } },
+
+        { x: xAxis, y: yNorm, type: 'scatter', mode: 'lines', name: 'Y', line: { color: 'green' } },
+        { x: xAxis, y: yAlert, type: 'scatter', mode: 'markers', name: 'Y fuori soglia', marker: { color: 'green', size: 6, symbol: 'circle-open' } },
+
+        { x: xAxis, y: zAxis, type: 'scatter', mode: 'lines', name: 'Z', line: { color: 'blue' } }
+      ];
+
+      Plotly.newPlot('chart', traces, layout, {responsive: true});
     }
 
-    async function renderChart() {
-      const { labels, x, y, z } = await fetchData();
-
-      new Chart(document.getElementById("accChart"), {
-        type: 'line',
-        data: {
-          labels,
-          datasets: [
-            {
-              label: 'X',
-              data: x,
-              borderColor: 'red',
-              fill: false,
-              tension: 0.2
-            },
-            {
-              label: 'Y',
-              data: y,
-              borderColor: 'green',
-              fill: false,
-              tension: 0.2
-            },
-            {
-              label: 'Z',
-              data: z,
-              borderColor: 'blue',
-              fill: false,
-              tension: 0.2
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          scales: {
-            y: {
-              beginAtZero: false
-            }
-          }
-        }
-      });
-    }
-
-    renderChart();
+    fetchAndPlot();
+    setInterval(fetchAndPlot, 30000);
   </script>
 </body>
 </html>
