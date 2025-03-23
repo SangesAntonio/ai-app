@@ -60,6 +60,18 @@
       margin-top: 1rem;
       display: none;
     }
+    .back-button {
+      display: block;
+      margin: 1rem auto;
+      text-align: center;
+      text-decoration: none;
+      color: white;
+      background: #0077ff;
+      padding: 10px 20px;
+      border-radius: 5px;
+      width: fit-content;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
@@ -82,6 +94,7 @@
     <div class="note">
       Visualizzazione dinamica dei rilevamenti. Il grafico si aggiorna automaticamente ogni 30 secondi.
     </div>
+    <a href="javascript:history.back()" class="back-button">⬅️ Visualizza terremoti</a>
   </main>
 
   <script>
