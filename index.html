@@ -19,35 +19,62 @@
       text-align: center;
     }
     main {
-      padding: 2rem;
+      padding: 1rem;
     }
     #chart {
       background: white;
       border-radius: 10px;
       box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      height: 60vh;
+      width: 100%;
+      max-width: 100%;
+      overflow-x: auto;
     }
-    .note {
+    .note, .selector {
       text-align: center;
-      font-size: 0.9rem;
+      font-size: 0.95rem;
       color: #555;
-      margin-top: 1rem;
+      margin: 1rem auto;
+      width: 100%;
+      max-width: 90%;
+    }
+    select {
+      padding: 6px 10px;
+      font-size: 1rem;
+      border-radius: 5px;
+      border: 1px solid #ccc;
     }
   </style>
 </head>
 <body>
   <header>
     <h1>Grafico Accelerometro</h1>
-    <p>Dati da Firebase aggiornati ogni 10 secondi</p>
+    <p>Dati da Firebase aggiornati ogni 30 secondi</p>
   </header>
   <main>
+    <div class="selector">
+      <label for="rangeSelector">Visualizza ultimi:</label>
+      <select id="rangeSelector">
+        <option value="1">1 minuto</option>
+        <option value="5" selected>5 minuti</option>
+        <option value="10">10 minuti</option>
+        <option value="20">20 minuti</option>
+      </select>
+    </div>
     <div id="chart"></div>
     <div class="note">
-      Visualizzazione degli ultimi 5 minuti di rilevamenti. Il grafico si aggiorna automaticamente ogni 30 secondi.
+      Visualizzazione dinamica dei rilevamenti. Il grafico si aggiorna automaticamente ogni 30 secondi.
     </div>
   </main>
 
   <script>
     const url = "https://api-sismografo-default-rtdb.europe-west1.firebasedatabase.app/batch_acc.json";
+    let selectedMinutes = 5;
+
+    document.getElementById('rangeSelector').addEventListener('change', function () {
+      selectedMinutes = parseInt(this.value);
+      fetchAndPlot();
+    });
 
     async function fetchAndPlot() {
       const res = await fetch(url);
@@ -55,7 +82,7 @@
 
       const allTimestamps = Object.keys(data).sort();
       const now = new Date().getTime();
-      const twentyMinutesAgo = now - (5 * 60 * 1000);
+      const rangeAgo = now - (selectedMinutes * 60 * 1000);
 
       const xAxis = [];
       const dataX = [], dataY = [], dataZ = [];
@@ -65,10 +92,10 @@
         if (!batch || !batch.letture || !batch.end_timestamp) continue;
 
         const batchTime = new Date(batch.end_timestamp).getTime();
-        if (batchTime < twentyMinutesAgo) continue;
+        if (batchTime < rangeAgo) continue;
 
-        batch.letture.forEach((p, i) => {
-          xAxis.push(xAxis.length); // nascondi etichette x per evitare sovraccarico
+        batch.letture.forEach((p) => {
+          xAxis.push(xAxis.length);
           dataX.push(p.x);
           dataY.push(p.y);
           dataZ.push(p.z);
@@ -76,11 +103,12 @@
       }
 
       const layout = {
-        title: "Accelerazione negli ultimi 5 minuti",
-        xaxis: { title: "", showticklabels: false },
+        title: `Accelerazione negli ultimi ${selectedMinutes} minuti`,
+        xaxis: { title: "Campionamenti recenti", showticklabels: false },
         yaxis: { title: "Valore (m/s²)", rangemode: 'tozero', autorange: false, range: [-2, 12] },
         margin: { t: 50, l: 50, r: 10, b: 50 },
-        legend: { orientation: 'h', y: -0.3 }
+        legend: { orientation: 'h', y: -0.3 },
+        height: window.innerHeight * 0.6
       };
 
       const traces = [
