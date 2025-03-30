@@ -77,7 +77,7 @@
 <body>
   <header>
     <h1>Grafico Accelerometro (Arcofelice)</h1>
-    <p>Dati dal sensore aggiornati ogni 20 secondi</p>
+    <p>Dati dal sensore aggiornati ogni 10 secondi</p>
   </header>
   <main>
     <div class="selector">
@@ -90,7 +90,7 @@
       </select>
     </div>
     <div id="countdown" style="text-align: center; font-size: 14px; color: #333; margin: 10px 0;">
-      🔄 Prossimo aggiornamento tra: <span id="seconds">20</span>s
+      🔄 Prossimo aggiornamento tra: <span id="seconds">10</span>s
     </div>
     <div id="chart"></div>
     <div id="offlineAlert" class="offline">❌ Sensore offline - nessun dato recente ricevuto</div>
@@ -99,10 +99,10 @@
      
     </div>
     <a href="javascript:history.back()" class="back-button">⬅️ Visualizza terremoti</a>
+    <a href="inclinazione.html" class="button">Visualizza livella</a>
   </main>
 
   <script>
-    const url = "https://www.mychartjourney.com/api/dati.php";
     let selectedMinutes = 5;
     const amplificationFactor = 1;
 
@@ -110,8 +110,9 @@
       selectedMinutes = parseInt(this.value);
       fetchAndPlot();
     });
-
+    
     async function fetchAndPlot() {
+      const url = "https://www.mychartjourney.com/api/dati.php?minuti="+ selectedMinutes;
       const res = await fetch(url);
       const data = await res.json();
 
@@ -180,10 +181,10 @@
 
       const traces = [
         { x: xAxis, y: xNorm, type: 'scatter', mode: 'lines', name: 'X', line: { color: 'red' } },
-        { x: xAxis, y: xAlert, type: 'scatter', mode: 'markers', name: 'X fuori soglia', marker: { color: 'red', size: 6, symbol: 'circle-open' } },
+        ////{ x: xAxis, y: xAlert, type: 'scatter', mode: 'markers', name: 'X fuori soglia', marker: { color: 'red', size: 6, symbol: 'circle-open' } },
 
         { x: xAxis, y: yNorm, type: 'scatter', mode: 'lines', name: 'Y', line: { color: 'green' } },
-        { x: xAxis, y: yAlert, type: 'scatter', mode: 'markers', name: 'Y fuori soglia', marker: { color: 'green', size: 6, symbol: 'circle-open' } },
+        //{ x: xAxis, y: yAlert, type: 'scatter', mode: 'markers', name: 'Y fuori soglia', marker: { color: 'green', size: 6, symbol: 'circle-open' } },
 
         { x: xAxis, y: zAxis, type: 'scatter', mode: 'lines', name: 'Z', line: { color: 'blue' } }
       ];
@@ -192,14 +193,14 @@
     }
 
     fetchAndPlot();
-    setInterval(fetchAndPlot, 20000);
-    let secondsLeft = 20;
+    setInterval(fetchAndPlot, 10000);
+    let secondsLeft = 10;
     const countdownSpan = document.getElementById("seconds");
 
     setInterval(() => {
       secondsLeft--;
       if (secondsLeft <= 0) {
-        secondsLeft = 20;
+        secondsLeft = 10;
       }
       countdownSpan.textContent = secondsLeft;
     }, 1000);
