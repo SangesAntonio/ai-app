@@ -87,6 +87,7 @@
         <option value="5" selected>5 minuti</option>
         <option value="10">10 minuti</option>
         <option value="20">20 minuti</option>
+        <option value="60">60 minuti</option>
       </select>
     </div>
     <div id="countdown" style="text-align: center; font-size: 14px; color: #333; margin: 10px 0;">
@@ -103,100 +104,90 @@
   </main>
 
   <script>
-    let selectedMinutes = 5;
+    let selectedMinutes = 60;
     const amplificationFactor = 1;
-
+  
     document.getElementById('rangeSelector').addEventListener('change', function () {
       selectedMinutes = parseInt(this.value);
       fetchAndPlot();
     });
-    
+  
     async function fetchAndPlot() {
-      const url = "https://www.mychartjourney.com/api/dati.php?minuti="+ selectedMinutes;
+      const url = "https://www.mychartjourney.com/api/dati.php?minuti=" + selectedMinutes;
       const res = await fetch(url);
       const data = await res.json();
-
+  
       const allTimestamps = Object.keys(data).sort();
       const now = new Date().getTime();
       const rangeAgo = now - (selectedMinutes * 60 * 1000);
-
+  
       const latestEntry = data[allTimestamps[allTimestamps.length - 1]];
       const latestTimestamp = new Date(latestEntry?.end_timestamp).getTime();
-
+  
       if (!latestTimestamp || now - latestTimestamp > 90000) {
         document.getElementById("offlineAlert").style.display = "block";
       } else {
         document.getElementById("offlineAlert").style.display = "none";
       }
-
+  
       const xAxis = [];
-      const xNorm = [], xAlert = [];
-      const yNorm = [], yAlert = [];
+      const xNorm = [];
+      const yNorm = [];
       const zAxis = [];
-
-      let counter = 0;
-
+  
       for (let key of allTimestamps) {
         const batch = data[key];
         if (!batch || !batch.letture || !batch.end_timestamp) continue;
-
+  
         const batchTime = new Date(batch.end_timestamp).getTime();
         if (batchTime < rangeAgo) continue;
-
-        batch.letture.forEach((p) => {
-          const amplifiedX = p.x * amplificationFactor;
-          const amplifiedY = p.y * amplificationFactor;
-
-          xAxis.push(counter);
+  
+        const letture = batch.letture;
+        const step = 6000 / letture.length;
+  
+        letture.forEach((p, i) => {
+          const pointTime = new Date(batchTime - (step * (letture.length - 1 - i)));
+          const timeStr = pointTime.toISOString().substr(11, 8); // HH:mm:ss
+          xAxis.push(timeStr);
+  
+          xNorm.push(p.x * amplificationFactor);
+          yNorm.push(p.y * amplificationFactor);
           zAxis.push(p.z);
-
-          if (amplifiedX > 2 || amplifiedX < -2) {
-            xNorm.push(null);
-            xAlert.push(amplifiedX);
-          } else {
-            xNorm.push(amplifiedX);
-            xAlert.push(null);
-          }
-
-          if (amplifiedY > 2 || amplifiedY < -2) {
-            yNorm.push(null);
-            yAlert.push(amplifiedY);
-          } else {
-            yNorm.push(amplifiedY);
-            yAlert.push(null);
-          }
-
-          counter++;
         });
       }
-
+  
       const layout = {
         title: `Accelerazione negli ultimi ${selectedMinutes} minuti (X,Y amplificati ×${amplificationFactor})`,
-        xaxis: { title: "Campionamenti recenti", showticklabels: false },
-        yaxis: { title: "Valore (m/s²)", rangemode: 'tozero', autorange: false, range: [-10, 20] },
-        margin: { t: 80, l: 50, r: 10, b: 50 },
+        xaxis: {
+          title: "Orario",
+          tickangle: -45
+        },
+        yaxis: {
+          title: "Valore (m/s²)",
+          rangemode: 'tozero',
+          autorange: false,
+          range: [-3, 3]
+        },
+        margin: { t: 80, l: 50, r: 10, b: 80 },
         legend: { orientation: 'h', y: -0.3 },
         height: window.innerHeight * 0.6
       };
-
+  
       const traces = [
         { x: xAxis, y: xNorm, type: 'scatter', mode: 'lines', name: 'X', line: { color: 'red' } },
-        ////{ x: xAxis, y: xAlert, type: 'scatter', mode: 'markers', name: 'X fuori soglia', marker: { color: 'red', size: 6, symbol: 'circle-open' } },
-
         { x: xAxis, y: yNorm, type: 'scatter', mode: 'lines', name: 'Y', line: { color: 'green' } },
-        //{ x: xAxis, y: yAlert, type: 'scatter', mode: 'markers', name: 'Y fuori soglia', marker: { color: 'green', size: 6, symbol: 'circle-open' } },
-
         { x: xAxis, y: zAxis, type: 'scatter', mode: 'lines', name: 'Z', line: { color: 'blue' } }
       ];
-
+  
       Plotly.newPlot('chart', traces, layout, {responsive: true});
     }
-
+  
     fetchAndPlot();
     setInterval(fetchAndPlot, 10000);
+  
     let secondsLeft = 10;
     const countdownSpan = document.getElementById("seconds");
-
+  
     setInterval(() => {
       secondsLeft--;
       if (secondsLeft <= 0) {
@@ -205,5 +196,6 @@
       countdownSpan.textContent = secondsLeft;
     }, 1000);
   </script>
+  
 </body>
 </html>
