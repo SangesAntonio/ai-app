@@ -1,138 +1,126 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Dati Accelerometro</title>
+
+  <!-- Plotly -->
   <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <!-- Bootstrap 5 CSS -->
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+  />
+
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      background: #f4f4f4;
-    }
-    header {
-      background: #0077ff;
-      color: white;
-      padding: 1rem;
-      text-align: center;
-    }
-    main {
-      padding: 1rem;
-    }
-    .selector {
-      text-align: center;
-      font-size: 0.95rem;
-      color: #555;
-      margin: 0.5rem auto 1rem auto;
-      width: 100%;
-      max-width: 90%;
-    }
-    #chart {
-      background: white;
-      border-radius: 10px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-      height: 60vh;
-      width: 100%;
-      max-width: 100%;
-      overflow-x: auto;
-    }
-    .note {
-      text-align: center;
-      font-size: 0.95rem;
-      color: #555;
-      margin: 1rem auto;
-      width: 100%;
-      max-width: 90%;
-    }
-    select {
-      padding: 6px 10px;
-      font-size: 1rem;
-      border-radius: 5px;
-      border: 1px solid #ccc;
-    }
-    .offline {
-      color: red;
-      text-align: center;
-      font-weight: bold;
-      font-size: 1.1rem;
-      margin-top: 1rem;
-      display: none;
-    }
-    .back-button {
-      display: block;
-      margin: 1rem auto;
-      text-align: center;
-      text-decoration: none;
-      color: white;
-      background: #0077ff;
-      padding: 10px 20px;
-      border-radius: 5px;
-      width: fit-content;
-      font-weight: bold;
-    }
+    body { font-family: Arial, sans-serif; background: #f4f4f4; }
+    header { background: #0077ff; color: white; padding: 1rem; text-align: center; }
+    main { padding: 1rem; }
+    #chart { background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); height: 60vh; }
+    .offline { color: red; text-align: center; font-weight: bold; margin-top: 1rem; display: none; }
+    .note { text-align: center; color: #555; margin: 1rem auto; max-width: 90%; }
   </style>
 </head>
 <body>
   <header>
-    <h1>Grafico Accelerometro (Arcofelice)</h1>
+    <h1 id="pageTitle">Grafico Accelerometro (Arcofelice)</h1>
     <p>Dati dal sensore aggiornati ogni 10 secondi</p>
   </header>
-  <main>
-    <div class="selector">
-      <label for="rangeSelector">Visualizza ultimi:</label>
-      <select id="rangeSelector">
-        <option value="1">1 minuto</option>
-        <option value="5" selected>5 minuti</option>
-        <option value="10">10 minuti</option>
-        <option value="20">20 minuti</option>
-        <option value="60">60 minuti</option>
-      </select>
+
+  <main class="container">
+    <div class="row mb-3">
+      <div class="col text-center">
+        <label for="rangeSelector" class="form-label">Visualizza ultimi:</label>
+        <select id="rangeSelector" class="form-select d-inline-block w-auto">
+          <option value="1">1 minuto</option>
+          <option value="5" selected>5 minuti</option>
+          <option value="10">10 minuti</option>
+          <option value="20">20 minuti</option>
+          <option value="60">60 minuti</option>
+        </select>
+        <button id="openHistory" class="btn btn-success ms-3">
+          📜 Storico Eventi
+        </button>
+      </div>
     </div>
-    <div id="countdown" style="text-align: center; font-size: 14px; color: #333; margin: 10px 0;">
+
+    <div id="countdown" class="text-center mb-3">
       🔄 Prossimo aggiornamento tra: <span id="seconds">10</span>s
     </div>
+
     <div id="chart"></div>
     <div id="offlineAlert" class="offline">❌ Sensore offline - nessun dato recente ricevuto</div>
     <div class="note">
-      Visualizzazione dinamica dei rilevamenti. Il grafico si aggiorna automaticamente ogni 20 secondi.<br>
-     
+      Visualizzazione dinamica dei rilevamenti. Il grafico si aggiorna automaticamente ogni 10 secondi.
     </div>
-    <a href="javascript:history.back()" class="back-button">⬅️ Visualizza terremoti</a>
-    <a href="inclinazione.html" class="button">Visualizza livella</a>
+
+    <div class="text-center mt-4">
+      <a href="javascript:history.back()" class="btn btn-primary me-2">⬅️ Visualizza terremoti</a>
+      <a href="inclinazione.html" class="btn btn-secondary">Visualizza livella</a>
+    </div>
   </main>
 
+  <!-- Modal Bootstrap 5 -->
+  <div
+    class="modal fade"
+    id="historyModal"
+    tabindex="-1"
+    aria-labelledby="historyModalLabel"
+    aria-hidden="true"
+  >
+    <div class="modal-dialog modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="historyModalLabel">Storico Eventi</h5>
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="modal"
+            aria-label="Chiudi"
+          ></button>
+        </div>
+        <div class="modal-body">
+          <ul id="historyList" class="list-group">
+            <li class="list-group-item text-center">Caricamento…</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap 5 Bundle (Popper + JS) -->
+  <script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
+  ></script>
+
   <script>
-    let selectedMinutes = 60;
+    let selectedMinutes = 5;
     const amplificationFactor = 1;
-  
-    document.getElementById('rangeSelector').addEventListener('change', function () {
-      selectedMinutes = parseInt(this.value);
-      fetchAndPlot();
-    });
-  
+    let realTimeInterval;
+
+    // 1) FUNZIONE DI PLOTTAGGIO REAL-TIME
     async function fetchAndPlot() {
-      const url = "https://www.mychartjourney.com/api/dati.php?minuti=" + selectedMinutes;
+      // reset titolo
+      document.getElementById('pageTitle').textContent = 
+        `Grafico Accelerometro (Arcofelice)`;
+
+      const url = "/api/dati.php?minuti=" + selectedMinutes;
       const res = await fetch(url);
       const data = await res.json();
-  
+
       const allTimestamps = Object.keys(data).sort();
       const now = Date.now();
       const rangeAgo = now - selectedMinutes * 60 * 1000;
-  
+
       let xNorm = [], yNorm = [], zAxis = [], xIndex = [];
-  
-      // indice globale dei punti
       let idx = 0;
-  
+
       for (let key of allTimestamps) {
         const batch = data[key];
         if (!batch?.letture || !batch.end_timestamp) continue;
-  
         const batchTime = new Date(batch.end_timestamp).getTime();
         if (batchTime < rangeAgo) continue;
-  
         for (let p of batch.letture) {
           xNorm.push(p.x * amplificationFactor);
           yNorm.push(p.y * amplificationFactor);
@@ -140,43 +128,98 @@
           xIndex.push(idx++);
         }
       }
-  
+
       const layout = {
-        title: `Accelerazione ultimi ${selectedMinutes} min (X,Y amplificati ×${amplificationFactor})`,
-        xaxis: {
-          title: "Campione #",
-          tickangle: 0
-        },
-        yaxis: {
-          title: "Valore (g)",
-          autorange: false,
-          range: [-3, 3]
-        },
-        margin: { t: 80, l: 50, r: 10, b: 50 },
-        legend: { orientation: 'h', y: -0.2 },
-        height: window.innerHeight * 0.6
+        title: `Accelerazione ultimi ${selectedMinutes} min`,
+        xaxis: { title: "Campione #" },
+        yaxis: { title: "Valore (g)", autorange: false, range: [-3, 3] },
+        margin: { t: 80, l: 50, r: 10, b: 50 }
       };
-  
       const traces = [
-        { x: xIndex, y: xNorm, type: 'scatter', mode: 'lines', name: 'X' },
-        { x: xIndex, y: yNorm, type: 'scatter', mode: 'lines', name: 'Y' },
-        { x: xIndex, y: zAxis, type: 'scatter', mode: 'lines', name: 'Z' }
+        { x: xIndex, y: xNorm, mode: 'lines', name: 'X' },
+        { x: xIndex, y: yNorm, mode: 'lines', name: 'Y' },
+        { x: xIndex, y: zAxis, mode: 'lines', name: 'Z' }
       ];
-  
       Plotly.newPlot('chart', traces, layout, {responsive: true});
     }
-  
+
+    // 2) FUNZIONE DI PLOTTAGGIO STORICO
+    async function loadEventChart(idEvento) {
+      clearInterval(realTimeInterval);
+      document.getElementById('pageTitle').textContent = 
+        `Storico Evento: ${idEvento}`;
+
+      const res = await fetch(`https://www.mychartjourney.com/api/eventiS.php?id_evento=${encodeURIComponent(idEvento)}`);
+      const rows = await res.json(); // [{x,y,z,timestamp}, ...]
+
+      const times = rows.map(r => r.timestamp);
+      const xNorm = rows.map(r => r.x * amplificationFactor);
+      const yNorm = rows.map(r => r.y * amplificationFactor);
+      const zAxis = rows.map(r => r.z);
+
+      const layout = {
+        title: `Dati Evento ${idEvento}`,
+        xaxis: { title: "Timestamp", type: 'date' },
+        yaxis: { title: "Valore (g)" },
+        margin: { t: 80, l: 50, r: 10, b: 80 }
+      };
+      const traces = [
+        { x: times, y: xNorm, mode: 'lines', name: 'X' },
+        { x: times, y: yNorm, mode: 'lines', name: 'Y' },
+        { x: times, y: zAxis, mode: 'lines', name: 'Z' }
+      ];
+      Plotly.newPlot('chart', traces, layout, {responsive: true});
+    }
+
+    // 3) INIZIALIZZA REAL-TIME
+    document.getElementById('rangeSelector')
+      .addEventListener('change', e => {
+        selectedMinutes = +e.target.value;
+        fetchAndPlot();
+      });
     fetchAndPlot();
-    setInterval(fetchAndPlot, 10000);
-  
+    realTimeInterval = setInterval(fetchAndPlot, 10000);
+
+    // 4) STORICO EVENTI
+    const fakeApi = 'https://www.mychartjourney.com/api/eventiS.php';
+    const historyModalEl = document.getElementById('historyModal');
+    const historyListEl  = document.getElementById('historyList');
+    const historyModal   = new bootstrap.Modal(historyModalEl);
+
+    document.getElementById('openHistory')
+      .addEventListener('click', () => historyModal.show());
+
+    historyModalEl.addEventListener('show.bs.modal', async () => {
+      historyListEl.innerHTML = '<li class="list-group-item text-center">Caricamento…</li>';
+      try {
+        const res    = await fetch(fakeApi);
+        const ids    = await res.json(); // ["evt1","evt2",...]
+        historyListEl.innerHTML = '';
+        ids.forEach(id => {
+          const li = document.createElement('li');
+          li.className = 'list-group-item d-flex justify-content-between align-items-center';
+          li.textContent = `Evento ${id}`;
+          const btn = document.createElement('button');
+          btn.className = 'btn btn-sm btn-outline-primary';
+          btn.textContent = 'Apri';
+          btn.onclick = () => {
+            loadEventChart(id);
+            historyModal.hide();
+          };
+          li.appendChild(btn);
+          historyListEl.appendChild(li);
+        });
+      } catch {
+        historyListEl.innerHTML = '<li class="list-group-item text-danger text-center">Errore caricamento</li>';
+      }
+    });
+
+    // 5) COUNTDOWN
     let secondsLeft = 10;
-    const countdownSpan = document.getElementById("seconds");
-  
     setInterval(() => {
       secondsLeft = secondsLeft > 1 ? secondsLeft - 1 : 10;
-      countdownSpan.textContent = secondsLeft;
+      document.getElementById('seconds').textContent = secondsLeft;
     }, 1000);
   </script>
-  
 </body>
 </html>
