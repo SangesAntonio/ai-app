@@ -211,30 +211,39 @@
     document.getElementById('openHistory')
       .addEventListener('click', () => historyModal.show());
 
-    historyModalEl.addEventListener('show.bs.modal', async () => {
-      historyListEl.innerHTML = '<li class="list-group-item text-center">Caricamento…</li>';
-      try {
-        const res    = await fetch(fakeApi);
-        const ids    = await res.json(); // ["evt1","evt2",...]
-        historyListEl.innerHTML = '';
-        ids.forEach(id => {
-          const li = document.createElement('li');
-          li.className = 'list-group-item d-flex justify-content-between align-items-center';
-          li.textContent = `Evento ${id}`;
-          const btn = document.createElement('button');
-          btn.className = 'btn btn-sm btn-outline-primary';
-          btn.textContent = 'Apri';
-          btn.onclick = () => {
-            loadEventChart(id);
-            historyModal.hide();
-          };
-          li.appendChild(btn);
-          historyListEl.appendChild(li);
-        });
-      } catch {
-        historyListEl.innerHTML = '<li class="list-group-item text-danger text-center">Errore caricamento</li>';
-      }
-    });
+      historyModalEl.addEventListener('show.bs.modal', async () => {
+        historyListEl.innerHTML = '<li class="list-group-item text-center">Caricamento…</li>';
+        try {
+          const res    = await fetch('/api_eventi.php');
+          const events = await res.json(); // ora è [{id_evento, data_inizio}, …]
+          historyListEl.innerHTML = '';
+
+          events.forEach(evt => {
+            const li = document.createElement('li');
+            li.className = 'list-group-item d-flex justify-content-between align-items-center';
+            // Formatto la data (solo YYYY-MM-DD)
+            const date = evt.data_inizio.split(' ')[0];
+            li.innerHTML = `
+              <div>
+                <strong>${evt.id_evento}</strong><br>
+                <small class="text-muted">${date}</small>
+              </div>
+            `;
+            const btn = document.createElement('button');
+            btn.className = 'btn btn-sm btn-outline-primary';
+            btn.textContent = 'Apri';
+            btn.onclick = () => {
+              loadEventChart(evt.id_evento);
+              historyModal.hide();
+            };
+            li.appendChild(btn);
+            historyListEl.appendChild(li);
+          });
+        } catch (err) {
+          historyListEl.innerHTML = '<li class="list-group-item text-danger text-center">Errore caricamento</li>';
+          console.error(err);
+        }
+      });
 
     // 5) COUNTDOWN
     let secondsLeft = 10;
