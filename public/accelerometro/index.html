@@ -214,7 +214,7 @@
       historyModalEl.addEventListener('show.bs.modal', async () => {
         historyListEl.innerHTML = '<li class="list-group-item text-center">Caricamento…</li>';
         try {
-          const res    = await fetch('/api_eventi.php');
+          const res    = await fetch(fakeApi);
           const events = await res.json(); // ora è [{id_evento, data_inizio}, …]
           historyListEl.innerHTML = '';
 
