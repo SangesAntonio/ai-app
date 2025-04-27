@@ -145,31 +145,53 @@
 
     // 2) FUNZIONE DI PLOTTAGGIO STORICO
     async function loadEventChart(idEvento) {
-      clearInterval(realTimeInterval);
-      document.getElementById('pageTitle').textContent = 
-        `Storico Evento: ${idEvento}`;
+  clearInterval(realTimeInterval);
+  document.getElementById('pageTitle').textContent =
+    `Storico Evento: ${idEvento}`;
 
-      const res = await fetch(`https://www.mychartjourney.com/api/eventiS.php?id_evento=${encodeURIComponent(idEvento)}`);
-      const rows = await res.json(); // [{x,y,z,timestamp}, ...]
+  const res  = await fetch(
+    `https://www.mychartjourney.com/api/eventiS.php?id_evento=${encodeURIComponent(idEvento)}`
+  );
+  const rows = await res.json(); // [{timestamp,x,y,z,important}, ...]
 
-      const times = rows.map(r => r.timestamp);
-      const xNorm = rows.map(r => r.x * amplificationFactor);
-      const yNorm = rows.map(r => r.y * amplificationFactor);
-      const zAxis = rows.map(r => r.z);
+  // 1) Costruiamo gli indici per l'asse X
+  const xIndex   = rows.map((_, i) => i);
+  const xNorm    = rows.map(r => r.x * amplificationFactor);
+  const yNorm    = rows.map(r => r.y * amplificationFactor);
+  const zAxis    = rows.map(r => r.z);
+  const tooltips = rows.map(r => r.timestamp);
 
-      const layout = {
-        title: `Dati Evento ${idEvento}`,
-        xaxis: { title: "Timestamp", type: 'date' },
-        yaxis: { title: "Valore (g)" },
-        margin: { t: 80, l: 50, r: 10, b: 80 }
-      };
-      const traces = [
-        { x: times, y: xNorm, mode: 'lines', name: 'X' },
-        { x: times, y: yNorm, mode: 'lines', name: 'Y' },
-        { x: times, y: zAxis, mode: 'lines', name: 'Z' }
-      ];
-      Plotly.newPlot('chart', traces, layout, {responsive: true});
+  const layout = {
+    title: `Dati Evento ${idEvento}`,
+    xaxis: {
+      title: "Campione #",
+      tickmode: 'linear'
+    },
+    yaxis: { title: "Valore (g)" },
+    margin: { t: 80, l: 50, r: 10, b: 50 }
+  };
+
+  const traces = [
+    {
+      x: xIndex, y: xNorm, mode: 'lines+markers', name: 'X',
+      hovertemplate: 'Idx %{x}<br>%{text}<extra></extra>',
+      text: tooltips
+    },
+    {
+      x: xIndex, y: yNorm, mode: 'lines+markers', name: 'Y',
+      hovertemplate: 'Idx %{x}<br>%{text}<extra></extra>',
+      text: tooltips
+    },
+    {
+      x: xIndex, y: zAxis, mode: 'lines+markers', name: 'Z',
+      hovertemplate: 'Idx %{x}<br>%{text}<extra></extra>',
+      text: tooltips
     }
+  ];
+
+  Plotly.newPlot('chart', traces, layout, { responsive: true });
+}
+
 
     // 3) INIZIALIZZA REAL-TIME
     document.getElementById('rangeSelector')
