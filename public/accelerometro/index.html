@@ -50,6 +50,7 @@
     </div>
 
     <div id="chart"></div>
+    <div id="polarChart" style="height: 60vh; margin-top: 20px;"></div>
     <div id="offlineAlert" class="offline">❌ Sensore offline - nessun dato recente ricevuto</div>
     <div class="note">
       Visualizzazione dinamica dei rilevamenti. Il grafico si aggiorna automaticamente ogni 10 secondi.
@@ -114,6 +115,7 @@
       const rangeAgo = now - selectedMinutes * 60 * 1000;
 
       let xNorm = [], yNorm = [], zAxis = [], xIndex = [];
+      let magnitudes = [], angles = [];
       let idx = 0;
 
       for (let key of allTimestamps) {
@@ -126,6 +128,18 @@
           yNorm.push(p.y * amplificationFactor);
           zAxis.push(p.z);
           xIndex.push(idx++);
+
+          // Calculate magnitude and angle for polar chart
+          const magnitude = Math.sqrt(p.x * p.x + p.y * p.y);
+          // atan2(y, x) gives angle in radians from positive x-axis
+          // We need to map this to our coordinate system: Y=South, X=West
+          // atan2(y, x) -> angle from positive x (East)
+          // We want angle from South (positive y)
+          // Angle from South = atan2(x, y)
+          const angleRadians = Math.atan2(p.x, p.y); // Angle from positive Y (South)
+          const angleDegrees = angleRadians * (180 / Math.PI);
+          magnitudes.push(magnitude);
+          angles.push(angleDegrees);
         }
       }
 
@@ -141,6 +155,38 @@
         { x: xIndex, y: zAxis, mode: 'lines', name: 'Z' }
       ];
       Plotly.newPlot('chart', traces, layout, {responsive: true});
+
+      // Plot Polar Chart
+      const polarLayout = {
+        title: `Direzione Accelerazione Orizzontale ultimi ${selectedMinutes} min`,
+        polar: {
+          radialaxis: {
+            visible: true,
+            range: [0, Math.max(...magnitudes) * 1.1] // Adjust range based on max magnitude
+          },
+          angularaxis: {
+            direction: "clockwise",
+            thetazero: 0, // 0 degrees at the top (North)
+            rotation: 180, // Rotate to have South at the top
+            tickvals: [0, 45, 90, 135, 180, 225, 270, 315],
+            ticktext: ['S', 'SE', 'E', 'NE', 'N', 'NW', 'W', 'SW']
+          }
+        },
+        margin: { t: 80, l: 50, r: 50, b: 50 }
+      };
+
+      const polarTraces = [{
+        r: magnitudes,
+        theta: angles,
+        mode: 'markers',
+        type: 'scatterpolar',
+        name: 'Direzione',
+        marker: {
+          size: 5
+        }
+      }];
+
+      Plotly.newPlot('polarChart', polarTraces, polarLayout);
     }
 
     // 2) FUNZIONE DI PLOTTAGGIO STORICO
@@ -161,6 +207,16 @@
   const zAxis    = rows.map(r => r.z);
   const tooltips = rows.map(r => r.timestamp);
 
+  // Calculate magnitude and angle for polar chart
+  const magnitudes = rows.map(r => Math.sqrt(r.x * r.x + r.y * r.y));
+  // atan2(y, x) gives angle in radians from positive x-axis
+  // We need to map this to our coordinate system: Y=South, X=West
+  // atan2(y, x) -> angle from positive x (East)
+  // We want angle from South (positive y)
+  // Angle from South = atan2(x, y)
+  const angles = rows.map(r => Math.atan2(r.x, r.y) * (180 / Math.PI)); // Angle from positive Y (South) in degrees
+
+
   const layout = {
     title: `Dati Evento ${idEvento}`,
     xaxis: {
@@ -173,20 +229,52 @@
 
   const traces = [
     {
-      x: xIndex, y: xNorm, mode: 'lines+markers', name: 'X',
-      hovertemplate: 'Idx %{x}<br>%{text}<extra></extra>'
+      x: xIndex, y: xNorm, mode: 'lines', name: 'X',
+      hovertemplate: 'Value: %{y}<extra></extra>'
     },
     {
-      x: xIndex, y: yNorm, mode: 'lines+markers', name: 'Y',
-      hovertemplate: 'Idx %{x}<br>%{text}<extra></extra>'
+      x: xIndex, y: yNorm, mode: 'lines', name: 'Y',
+      hovertemplate: 'Value: %{y}<extra></extra>'
     },
     {
-      x: xIndex, y: zAxis, mode: 'lines+markers', name: 'Z',
-      hovertemplate: 'Idx %{x}<br>%{text}<extra></extra>'
+      x: xIndex, y: zAxis, mode: 'lines', name: 'Z',
+      hovertemplate: 'Value: %{y}<extra></extra>'
     }
   ];
 
   Plotly.newPlot('chart', traces, layout, { responsive: true });
+
+  // Plot Polar Chart for historical data
+  const polarLayout = {
+    title: `Direzione Accelerazione Orizzontale Evento ${idEvento}`,
+    polar: {
+      radialaxis: {
+        visible: true,
+        range: [0, Math.max(...magnitudes) * 1.1] // Adjust range based on max magnitude
+      },
+      angularaxis: {
+        direction: "clockwise",
+        thetazero: 0, // 0 degrees at the top (North)
+        rotation: 180, // Rotate to have South at the top
+        tickvals: [0, 45, 90, 135, 180, 225, 270, 315],
+        ticktext: ['S', 'SE', 'E', 'NE', 'N', 'NW', 'W', 'SW']
+      }
+    },
+    margin: { t: 80, l: 50, r: 50, b: 50 }
+  };
+
+  const polarTraces = [{
+    r: magnitudes,
+    theta: angles,
+    mode: 'markers',
+    type: 'scatterpolar',
+    name: 'Direzione',
+    marker: {
+      size: 5
+    }
+  }];
+
+  Plotly.newPlot('polarChart', polarTraces, polarLayout);
 }
 
 
