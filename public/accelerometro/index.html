@@ -631,6 +631,137 @@
     .js-plotly-plot .plotly .modebar-btn {
       font-size: 14px !important;
     }
+
+    /* Frequency Legend */
+    .frequency-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      padding: 1rem 1.25rem;
+      border-top: 1px solid var(--border-color);
+      background: var(--bg-secondary);
+    }
+
+    .freq-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8rem;
+    }
+
+    .freq-bar {
+      width: 16px;
+      height: 16px;
+      border-radius: 4px;
+    }
+
+    .freq-item.earthquake .freq-bar {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      box-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
+    }
+
+    .freq-item.seismic .freq-bar {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+    }
+
+    .freq-item.traffic .freq-bar {
+      background: linear-gradient(135deg, #10b981, #059669);
+    }
+
+    .freq-item.machinery .freq-bar {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+    }
+
+    .freq-item.electrical .freq-bar {
+      background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+    }
+
+    .freq-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .freq-desc {
+      color: var(--text-muted);
+    }
+
+    /* Event Detection Banner */
+    .event-detection {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, var(--bg-card), var(--bg-secondary));
+      border: 2px solid var(--accent-yellow);
+      border-radius: 16px;
+      padding: 1rem 2rem;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), 0 0 20px rgba(245, 158, 11, 0.3);
+      z-index: 1000;
+      animation: slide-up 0.5s ease, pulse-border 2s ease-in-out infinite;
+    }
+
+    @keyframes slide-up {
+      from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+      to { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+
+    @keyframes pulse-border {
+      0%, 100% { border-color: var(--accent-yellow); }
+      50% { border-color: var(--accent-red); }
+    }
+
+    .event-detection.earthquake {
+      border-color: var(--accent-red);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), 0 0 30px rgba(239, 68, 68, 0.5);
+    }
+
+    .event-detection-content {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .event-icon {
+      font-size: 2rem;
+      animation: shake 0.5s ease-in-out infinite;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-3px); }
+      75% { transform: translateX(3px); }
+    }
+
+    .event-type {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .event-details {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+
+    @media (max-width: 768px) {
+      .frequency-legend {
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+      
+      .freq-desc {
+        display: none;
+      }
+
+      .event-detection {
+        left: 1rem;
+        right: 1rem;
+        transform: none;
+        bottom: 1rem;
+      }
+    }
   </style>
 </head>
 <body>
@@ -769,6 +900,62 @@
         <div class="chart-body" id="histogramChart"></div>
       </div>
     </div>
+
+    <!-- Spettrogramma Full Width -->
+    <div class="charts-grid" style="margin-top: 1.5rem;">
+      <div class="chart-card chart-full">
+        <div class="chart-header">
+          <div class="chart-title">
+            <span class="chart-title-icon">🌈</span>
+            Spettrogramma Frequenze
+          </div>
+          <div class="chart-actions">
+            <button class="chart-btn active" data-spectrum="xy">X+Y</button>
+            <button class="chart-btn" data-spectrum="x">Solo X</button>
+            <button class="chart-btn" data-spectrum="y">Solo Y</button>
+          </div>
+        </div>
+        <div class="chart-body tall" id="spectrogramChart"></div>
+        
+        <!-- Legenda Frequenze -->
+        <div class="frequency-legend">
+          <div class="freq-item earthquake">
+            <span class="freq-bar"></span>
+            <span class="freq-label">0.1-2 Hz</span>
+            <span class="freq-desc">Terremoti / Onde sismiche</span>
+          </div>
+          <div class="freq-item seismic">
+            <span class="freq-bar"></span>
+            <span class="freq-label">2-10 Hz</span>
+            <span class="freq-desc">Microsismi / Attività tettonica</span>
+          </div>
+          <div class="freq-item traffic">
+            <span class="freq-bar"></span>
+            <span class="freq-label">10-30 Hz</span>
+            <span class="freq-desc">Traffico / Veicoli pesanti</span>
+          </div>
+          <div class="freq-item machinery">
+            <span class="freq-bar"></span>
+            <span class="freq-label">30-50 Hz</span>
+            <span class="freq-desc">Macchinari / Elettrodomestici</span>
+          </div>
+          <div class="freq-item electrical">
+            <span class="freq-bar"></span>
+            <span class="freq-label">>50 Hz</span>
+            <span class="freq-desc">Rumore elettrico / Interferenze</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rilevamento Automatico Evento -->
+    <div class="event-detection" id="eventDetection" style="display: none;">
+      <div class="event-detection-content">
+        <span class="event-icon">⚠️</span>
+        <span class="event-type" id="detectedEventType">Evento rilevato</span>
+        <span class="event-details" id="detectedEventDetails"></span>
+      </div>
+    </div>
   </main>
 
   <!-- History Modal -->
@@ -843,6 +1030,9 @@
       magnitude: '#06b6d4' // cyan
     };
 
+    // Variabile per il tipo di spettro selezionato
+    let spectrumType = 'xy';
+
     // ============================================
     // FUNZIONI UTILITY
     // ============================================
@@ -860,6 +1050,291 @@
       const squaredDiffs = values.map(v => Math.pow(v - mean, 2));
       const std = Math.sqrt(squaredDiffs.reduce((a, b) => a + b, 0) / values.length);
       return { mean, std };
+    }
+
+    // ============================================
+    // FFT E SPETTROGRAMMA
+    // ============================================
+    
+    // Implementazione FFT (Cooley-Tukey)
+    function fft(signal) {
+      const N = signal.length;
+      
+      // Se N non è potenza di 2, pad con zeri
+      const nextPow2 = Math.pow(2, Math.ceil(Math.log2(N)));
+      while (signal.length < nextPow2) {
+        signal.push(0);
+      }
+      
+      return fftRecursive(signal);
+    }
+
+    function fftRecursive(signal) {
+      const N = signal.length;
+      
+      if (N <= 1) return signal.map(x => ({ re: x, im: 0 }));
+      
+      // Dividi in pari e dispari
+      const even = [];
+      const odd = [];
+      for (let i = 0; i < N; i++) {
+        if (i % 2 === 0) even.push(signal[i]);
+        else odd.push(signal[i]);
+      }
+      
+      const evenFFT = fftRecursive(even);
+      const oddFFT = fftRecursive(odd);
+      
+      const result = new Array(N);
+      for (let k = 0; k < N / 2; k++) {
+        const angle = -2 * Math.PI * k / N;
+        const twiddle = {
+          re: Math.cos(angle),
+          im: Math.sin(angle)
+        };
+        
+        const oddK = oddFFT[k];
+        const product = {
+          re: twiddle.re * oddK.re - twiddle.im * oddK.im,
+          im: twiddle.re * oddK.im + twiddle.im * oddK.re
+        };
+        
+        result[k] = {
+          re: evenFFT[k].re + product.re,
+          im: evenFFT[k].im + product.im
+        };
+        
+        result[k + N / 2] = {
+          re: evenFFT[k].re - product.re,
+          im: evenFFT[k].im - product.im
+        };
+      }
+      
+      return result;
+    }
+
+    // Calcola lo spettro di potenza
+    function powerSpectrum(signal, sampleRate) {
+      const fftResult = fft([...signal]);
+      const N = fftResult.length;
+      const spectrum = [];
+      const frequencies = [];
+      
+      // Prendi solo la prima metà (frequenze positive)
+      for (let i = 0; i < N / 2; i++) {
+        const magnitude = Math.sqrt(fftResult[i].re ** 2 + fftResult[i].im ** 2) / N;
+        spectrum.push(magnitude);
+        frequencies.push((i * sampleRate) / N);
+      }
+      
+      return { frequencies, spectrum };
+    }
+
+    // Crea spettrogramma (serie di FFT nel tempo)
+    function createSpectrogram(signal, sampleRate, windowSize = 256, hopSize = 128) {
+      const spectrogramData = [];
+      const timePoints = [];
+      let frequencies = null;
+      
+      for (let i = 0; i + windowSize <= signal.length; i += hopSize) {
+        const window = signal.slice(i, i + windowSize);
+        
+        // Applica finestra di Hanning
+        const windowed = window.map((v, idx) => {
+          const hanning = 0.5 * (1 - Math.cos(2 * Math.PI * idx / (windowSize - 1)));
+          return v * hanning;
+        });
+        
+        const { frequencies: freqs, spectrum } = powerSpectrum(windowed, sampleRate);
+        
+        if (!frequencies) frequencies = freqs;
+        spectrogramData.push(spectrum);
+        timePoints.push(i / sampleRate);
+      }
+      
+      return { spectrogramData, frequencies, timePoints };
+    }
+
+    // Identifica il tipo di evento basato sulle frequenze dominanti
+    function identifyEvent(frequencies, spectrum) {
+      // Trova le bande di energia
+      const bands = {
+        earthquake: { min: 0.1, max: 2, energy: 0 },
+        seismic: { min: 2, max: 10, energy: 0 },
+        traffic: { min: 10, max: 30, energy: 0 },
+        machinery: { min: 30, max: 50, energy: 0 },
+        electrical: { min: 50, max: 100, energy: 0 }
+      };
+      
+      let totalEnergy = 0;
+      
+      for (let i = 0; i < frequencies.length; i++) {
+        const freq = frequencies[i];
+        const power = spectrum[i] ** 2;
+        totalEnergy += power;
+        
+        for (const [name, band] of Object.entries(bands)) {
+          if (freq >= band.min && freq < band.max) {
+            band.energy += power;
+          }
+        }
+      }
+      
+      // Normalizza
+      for (const band of Object.values(bands)) {
+        band.percentage = totalEnergy > 0 ? (band.energy / totalEnergy) * 100 : 0;
+      }
+      
+      // Determina evento dominante
+      let dominant = null;
+      let maxPercentage = 0;
+      
+      for (const [name, band] of Object.entries(bands)) {
+        if (band.percentage > maxPercentage && band.percentage > 30) {
+          maxPercentage = band.percentage;
+          dominant = name;
+        }
+      }
+      
+      return { dominant, bands, totalEnergy };
+    }
+
+    // Mostra/nascondi banner rilevamento evento
+    function showEventDetection(eventType, details) {
+      const banner = document.getElementById('eventDetection');
+      const typeEl = document.getElementById('detectedEventType');
+      const detailsEl = document.getElementById('detectedEventDetails');
+      
+      const eventLabels = {
+        earthquake: { label: '🌋 Possibile Attività Sismica!', class: 'earthquake' },
+        seismic: { label: '📳 Microsismi Rilevati', class: '' },
+        traffic: { label: '🚛 Vibrazioni da Traffico', class: '' },
+        machinery: { label: '⚙️ Vibrazioni Macchinari', class: '' },
+        electrical: { label: '⚡ Interferenza Elettrica', class: '' }
+      };
+      
+      if (eventType && eventLabels[eventType]) {
+        typeEl.textContent = eventLabels[eventType].label;
+        detailsEl.textContent = details;
+        banner.className = 'event-detection ' + eventLabels[eventType].class;
+        banner.style.display = 'block';
+        
+        // Nascondi dopo 10 secondi
+        setTimeout(() => {
+          banner.style.display = 'none';
+        }, 10000);
+      } else {
+        banner.style.display = 'none';
+      }
+    }
+
+    // Plot spettrogramma
+    function plotSpectrogram(xData, yData, timeLabels) {
+      // Scegli i dati in base alla selezione
+      let signal;
+      if (spectrumType === 'x') {
+        signal = xData;
+      } else if (spectrumType === 'y') {
+        signal = yData;
+      } else {
+        // Combina X e Y (magnitudo)
+        signal = xData.map((x, i) => Math.sqrt(x * x + (yData[i] || 0) ** 2));
+      }
+      
+      if (signal.length < 256) {
+        // Non abbastanza dati per lo spettrogramma
+        return;
+      }
+      
+      // Sample rate approssimativo (circa 33 Hz con 30ms tra letture)
+      const sampleRate = 33;
+      
+      const { spectrogramData, frequencies, timePoints } = createSpectrogram(
+        signal, sampleRate, 256, 64
+      );
+      
+      // Limita frequenze a 50 Hz per visualizzazione
+      const maxFreqIdx = frequencies.findIndex(f => f > 50) || frequencies.length;
+      const limitedFreqs = frequencies.slice(0, maxFreqIdx);
+      const limitedData = spectrogramData.map(row => row.slice(0, maxFreqIdx));
+      
+      // Converti in formato per heatmap (trasponi)
+      const zData = [];
+      for (let f = 0; f < limitedFreqs.length; f++) {
+        const row = [];
+        for (let t = 0; t < limitedData.length; t++) {
+          // Usa scala logaritmica per migliore visualizzazione
+          row.push(Math.log10(limitedData[t][f] + 1e-10));
+        }
+        zData.push(row);
+      }
+      
+      const trace = {
+        z: zData,
+        x: timePoints.map((t, i) => i),
+        y: limitedFreqs,
+        type: 'heatmap',
+        colorscale: [
+          [0, '#0a0e17'],
+          [0.2, '#1a2235'],
+          [0.4, '#3b82f6'],
+          [0.6, '#10b981'],
+          [0.8, '#f59e0b'],
+          [1, '#ef4444']
+        ],
+        showscale: true,
+        colorbar: {
+          title: 'Intensità (dB)',
+          titlefont: { color: '#94a3b8', size: 11 },
+          tickfont: { color: '#94a3b8', size: 10 }
+        },
+        hovertemplate: 'Tempo: %{x}<br>Freq: %{y:.1f} Hz<br>Intensità: %{z:.2f}<extra></extra>'
+      };
+      
+      // Aggiungi linee orizzontali per le bande di frequenza
+      const shapes = [
+        { y: 2, color: 'rgba(239, 68, 68, 0.5)', label: 'Terremoti' },
+        { y: 10, color: 'rgba(245, 158, 11, 0.5)', label: 'Microsismi' },
+        { y: 30, color: 'rgba(16, 185, 129, 0.5)', label: 'Traffico' },
+        { y: 50, color: 'rgba(59, 130, 246, 0.5)', label: 'Macchinari' }
+      ].map(s => ({
+        type: 'line',
+        x0: 0,
+        x1: timePoints.length,
+        y0: s.y,
+        y1: s.y,
+        line: { color: s.color, width: 1, dash: 'dot' }
+      }));
+
+      const layout = {
+        ...darkTheme,
+        xaxis: {
+          ...darkTheme.xaxis,
+          title: 'Tempo (finestre)',
+          showgrid: false
+        },
+        yaxis: {
+          ...darkTheme.yaxis,
+          title: 'Frequenza (Hz)',
+          showgrid: true,
+          gridcolor: 'rgba(45, 58, 79, 0.3)'
+        },
+        shapes: shapes
+      };
+
+      Plotly.react('spectrogramChart', [trace], layout, { responsive: true, displayModeBar: false });
+      
+      // Analizza l'ultimo segmento per rilevamento eventi
+      if (limitedData.length > 0) {
+        const lastSpectrum = limitedData[limitedData.length - 1];
+        const analysis = identifyEvent(limitedFreqs, lastSpectrum);
+        
+        // Mostra evento solo se c'è energia significativa
+        if (analysis.totalEnergy > 0.001 && analysis.dominant) {
+          const percentage = analysis.bands[analysis.dominant].percentage.toFixed(1);
+          showEventDetection(analysis.dominant, `${percentage}% energia nella banda`);
+        }
+      }
     }
 
     // ============================================
@@ -941,6 +1416,9 @@
 
         // Plot istogramma
         plotHistogram(allMagnitudes);
+
+        // Plot spettrogramma
+        plotSpectrogram(xData, yData, timeLabels);
 
       } catch (error) {
         console.error('Errore fetch dati:', error);
@@ -1342,6 +1820,16 @@
           // TODO: implement axis filtering
           document.querySelectorAll('.chart-actions .chart-btn[data-axis]').forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
+        });
+      });
+
+      // Spectrum type buttons
+      document.querySelectorAll('.chart-actions .chart-btn[data-spectrum]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.chart-actions .chart-btn[data-spectrum]').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          spectrumType = btn.dataset.spectrum;
+          fetchAndPlot(); // Aggiorna subito
         });
       });
 
