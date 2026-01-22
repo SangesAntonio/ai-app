@@ -657,6 +657,10 @@
           📜 Storico Eventi
         </button>
 
+        <button class="btn" id="toggleLive">
+          ⏸️ Pausa
+        </button>
+
         <button class="btn" id="openSettings">
           ⚙️ Impostazioni
         </button>
@@ -812,6 +816,7 @@
     let peakTime = null;
     let previousMagnitude = 0;
     let isViewingHistory = false;
+    let isPaused = false;
 
     // Plotly layout comuni
     const darkTheme = {
@@ -861,7 +866,7 @@
     // FETCH E PLOT DATI REAL-TIME
     // ============================================
     async function fetchAndPlot() {
-      if (isViewingHistory) return;
+      if (isViewingHistory || isPaused) return;
 
       try {
         const url = `${API_BASE}/dati.php?minuti=${selectedMinutes}`;
@@ -869,8 +874,10 @@
         const data = await res.json();
 
         const allTimestamps = Object.keys(data).sort();
-        const now = Date.now();
-        const rangeAgo = now - selectedMinutes * 60 * 1000;
+        
+        // Calcola il limite temporale (ora locale)
+        const now = new Date();
+        const rangeAgo = new Date(now.getTime() - selectedMinutes * 60 * 1000);
 
         let xData = [], yData = [], zData = [], timeLabels = [];
         let magnitudes = [], angles = [];
@@ -880,14 +887,27 @@
           const batch = data[key];
           if (!batch?.letture || !batch.end_timestamp) continue;
           
-          const batchTime = new Date(batch.end_timestamp).getTime();
+          // Parse del timestamp (formato: "2026-01-22 15:39:14")
+          const batchTime = new Date(batch.end_timestamp.replace(' ', 'T'));
+          
+          // Filtra per range temporale
           if (batchTime < rangeAgo) continue;
 
-          for (let p of batch.letture) {
+          // Calcola tempo per ogni lettura nel batch (distribuiti uniformemente)
+          const lettureCount = batch.letture.length;
+          const batchDuration = 3000; // ~3 secondi per batch (100 letture * 30ms)
+          const startTime = new Date(batchTime.getTime() - batchDuration);
+
+          for (let i = 0; i < batch.letture.length; i++) {
+            const p = batch.letture[i];
+            
+            // Calcola timestamp interpolato per questa lettura
+            const sampleTime = new Date(startTime.getTime() + (i / lettureCount) * batchDuration);
+            
             xData.push(p.x);
             yData.push(p.y);
             zData.push(p.z);
-            timeLabels.push(batch.end_timestamp);
+            timeLabels.push(sampleTime);
 
             const mag = calculateMagnitude(p.x, p.y);
             magnitudes.push(mag);
@@ -907,16 +927,17 @@
 
         // Aggiorna statistiche
         const currentMag = magnitudes[magnitudes.length - 1] || 0;
-        updateStats(xData, yData, magnitudes, currentMag, allTimestamps[allTimestamps.length - 1]);
+        const lastTimestamp = timeLabels[timeLabels.length - 1];
+        updateStats(xData, yData, magnitudes, currentMag, lastTimestamp);
 
-        // Plot principale
-        plotMainChart(xData, yData, zData);
+        // Plot principale con tempo sull'asse X
+        plotMainChart(xData, yData, zData, timeLabels);
 
         // Plot polare
         plotPolarChart(magnitudes.slice(-200), angles.slice(-200));
 
-        // Plot magnitudo
-        plotMagnitudeChart(magnitudes);
+        // Plot magnitudo con tempo
+        plotMagnitudeChart(magnitudes, timeLabels);
 
         // Plot istogramma
         plotHistogram(allMagnitudes);
@@ -991,9 +1012,9 @@
       document.getElementById('sampleRate').textContent = 
         `~${Math.round(magnitudes.length / (selectedMinutes * 60) * 10) / 10} campioni/sec`;
 
-      // Timestamp
+      // Timestamp (lastTs è già un Date object)
       if (lastTs) {
-        const ts = new Date(lastTs);
+        const ts = lastTs instanceof Date ? lastTs : new Date(lastTs);
         document.getElementById('lastTimestamp').textContent = formatTime(ts);
         const age = Math.round((Date.now() - ts.getTime()) / 1000);
         document.getElementById('dataAge').textContent = 
@@ -1004,33 +1025,46 @@
     // ============================================
     // GRAFICI
     // ============================================
-    function plotMainChart(xData, yData, zData) {
+    function plotMainChart(xData, yData, zData, timeLabels) {
+      // Usa indici numerici per l'asse X
       const indices = xData.map((_, i) => i);
+      
+      // Crea testo hover con timestamp
+      const hoverTexts = timeLabels.map((t, i) => {
+        const time = t instanceof Date ? t.toLocaleTimeString('it-IT') : t;
+        return `Ora: ${time}`;
+      });
 
       const traces = [
         {
           x: indices,
           y: xData,
-          type: 'scatter',
+          type: 'scattergl',
           mode: 'lines',
           name: 'Asse X',
-          line: { color: traceColors.x, width: 1.5 }
+          line: { color: traceColors.x, width: 1.5 },
+          text: hoverTexts,
+          hovertemplate: '<b>X</b>: %{y:.4f} g<br>%{text}<extra></extra>'
         },
         {
           x: indices,
           y: yData,
-          type: 'scatter',
+          type: 'scattergl',
           mode: 'lines',
           name: 'Asse Y',
-          line: { color: traceColors.y, width: 1.5 }
+          line: { color: traceColors.y, width: 1.5 },
+          text: hoverTexts,
+          hovertemplate: '<b>Y</b>: %{y:.4f} g<br>%{text}<extra></extra>'
         },
         {
           x: indices,
           y: zData,
-          type: 'scatter',
+          type: 'scattergl',
           mode: 'lines',
           name: 'Asse Z',
-          line: { color: traceColors.z, width: 1.5 }
+          line: { color: traceColors.z, width: 1.5 },
+          text: hoverTexts,
+          hovertemplate: '<b>Z</b>: %{y:.4f} g<br>%{text}<extra></extra>'
         }
       ];
 
@@ -1055,7 +1089,7 @@
         hovermode: 'x unified'
       };
 
-      Plotly.react('mainChart', traces, layout, { responsive: true, displayModeBar: false });
+      Plotly.react('mainChart', traces, layout, { responsive: true, displayModeBar: true });
     }
 
     function plotPolarChart(magnitudes, angles) {
@@ -1096,22 +1130,34 @@
       Plotly.react('polarChart', [trace], layout, { responsive: true, displayModeBar: false });
     }
 
-    function plotMagnitudeChart(magnitudes) {
+    function plotMagnitudeChart(magnitudes, timeLabels) {
       const indices = magnitudes.map((_, i) => i);
+      
+      // Crea testo hover con timestamp (se disponibile)
+      const hoverTexts = timeLabels ? timeLabels.map((t, i) => {
+        const time = t instanceof Date ? t.toLocaleTimeString('it-IT') : t;
+        return `Ora: ${time}`;
+      }) : indices.map(i => `Campione: ${i}`);
 
       const trace = {
         x: indices,
         y: magnitudes,
-        type: 'scatter',
+        type: 'scattergl',
         mode: 'lines',
         fill: 'tozeroy',
         line: { color: traceColors.magnitude, width: 1.5 },
-        fillcolor: 'rgba(6, 182, 212, 0.2)'
+        fillcolor: 'rgba(6, 182, 212, 0.2)',
+        text: hoverTexts,
+        hovertemplate: '<b>Magnitudo</b>: %{y:.4f} g<br>%{text}<extra></extra>'
       };
 
       const layout = {
         ...darkTheme,
-        xaxis: { ...darkTheme.xaxis, title: 'Campione', showgrid: false },
+        xaxis: { 
+          ...darkTheme.xaxis, 
+          title: 'Campione #',
+          showgrid: false
+        },
         yaxis: { ...darkTheme.yaxis, title: 'Magnitudo (g)' },
         showlegend: false
       };
@@ -1260,6 +1306,28 @@
       document.getElementById('closeHistory').addEventListener('click', () => closeModal('historyModal'));
       document.getElementById('openSettings').addEventListener('click', () => openModal('settingsModal'));
       document.getElementById('closeSettings').addEventListener('click', () => closeModal('settingsModal'));
+
+      // Pulsante Pausa/Riprendi
+      document.getElementById('toggleLive').addEventListener('click', () => {
+        isPaused = !isPaused;
+        const btn = document.getElementById('toggleLive');
+        const liveBadge = document.querySelector('.live-badge');
+        
+        if (isPaused) {
+          btn.innerHTML = '▶️ Riprendi';
+          btn.style.background = 'linear-gradient(135deg, var(--accent-green), var(--accent-cyan))';
+          liveBadge.textContent = 'PAUSA';
+          liveBadge.style.background = 'rgba(245, 158, 11, 0.2)';
+          liveBadge.style.color = 'var(--accent-yellow)';
+        } else {
+          btn.innerHTML = '⏸️ Pausa';
+          btn.style.background = '';
+          liveBadge.textContent = 'LIVE';
+          liveBadge.style.background = '';
+          liveBadge.style.color = '';
+          fetchAndPlot(); // Riprendi subito
+        }
+      });
 
       // Close modal on overlay click
       document.querySelectorAll('.modal-overlay').forEach(overlay => {
