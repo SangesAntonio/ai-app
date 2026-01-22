@@ -1246,6 +1246,10 @@
         return;
       }
       
+      // Rimuovi la media (DC offset) dal segnale
+      const mean = signal.reduce((a, b) => a + b, 0) / signal.length;
+      signal = signal.map(s => s - mean);
+      
       // Sample rate approssimativo (circa 33 Hz con 30ms tra letture)
       const sampleRate = 33;
       
@@ -1258,13 +1262,36 @@
       const limitedFreqs = frequencies.slice(0, maxFreqIdx);
       const limitedData = spectrogramData.map(row => row.slice(0, maxFreqIdx));
       
-      // Converti in formato per heatmap (trasponi)
+      // Calcola statistiche per normalizzazione
+      let allValues = [];
+      limitedData.forEach(row => {
+        row.forEach(val => {
+          if (val > 0) allValues.push(val);
+        });
+      });
+      
+      // Calcola percentili per soglia dinamica
+      allValues.sort((a, b) => a - b);
+      const noiseFloor = allValues[Math.floor(allValues.length * 0.3)] || 1e-10; // 30° percentile come rumore
+      const maxVal = allValues[Math.floor(allValues.length * 0.99)] || 1e-5; // 99° percentile come max
+      
+      // Converti in formato per heatmap con normalizzazione
       const zData = [];
       for (let f = 0; f < limitedFreqs.length; f++) {
         const row = [];
         for (let t = 0; t < limitedData.length; t++) {
-          // Usa scala logaritmica per migliore visualizzazione
-          row.push(Math.log10(limitedData[t][f] + 1e-10));
+          let val = limitedData[t][f];
+          
+          // Sottrai rumore di fondo
+          val = Math.max(0, val - noiseFloor);
+          
+          // Normalizza tra 0 e 1
+          val = val / (maxVal - noiseFloor + 1e-10);
+          
+          // Applica soglia - sotto 0.1 consideriamo silenzio
+          if (val < 0.1) val = 0;
+          
+          row.push(val);
         }
         zData.push(row);
       }
@@ -1275,35 +1302,55 @@
         y: limitedFreqs,
         type: 'heatmap',
         colorscale: [
-          [0, '#0a0e17'],
-          [0.2, '#1a2235'],
-          [0.4, '#3b82f6'],
-          [0.6, '#10b981'],
-          [0.8, '#f59e0b'],
-          [1, '#ef4444']
+          [0, '#0a0e17'],      // Nero - silenzio
+          [0.1, '#1a1a2e'],    // Blu molto scuro
+          [0.25, '#16213e'],   // Blu scuro
+          [0.4, '#1a56db'],    // Blu
+          [0.55, '#10b981'],   // Verde
+          [0.7, '#f59e0b'],    // Arancio
+          [0.85, '#ef4444'],   // Rosso
+          [1, '#ff0040']       // Rosso brillante
         ],
+        zmin: 0,
+        zmax: 1,
         showscale: true,
         colorbar: {
-          title: 'Intensità (dB)',
+          title: 'Intensità',
           titlefont: { color: '#94a3b8', size: 11 },
-          tickfont: { color: '#94a3b8', size: 10 }
+          tickfont: { color: '#94a3b8', size: 10 },
+          tickvals: [0, 0.25, 0.5, 0.75, 1],
+          ticktext: ['Silenzio', 'Basso', 'Medio', 'Alto', 'Forte']
         },
         hovertemplate: 'Tempo: %{x}<br>Freq: %{y:.1f} Hz<br>Intensità: %{z:.2f}<extra></extra>'
       };
       
       // Aggiungi linee orizzontali per le bande di frequenza
       const shapes = [
-        { y: 2, color: 'rgba(239, 68, 68, 0.5)', label: 'Terremoti' },
-        { y: 10, color: 'rgba(245, 158, 11, 0.5)', label: 'Microsismi' },
-        { y: 30, color: 'rgba(16, 185, 129, 0.5)', label: 'Traffico' },
-        { y: 50, color: 'rgba(59, 130, 246, 0.5)', label: 'Macchinari' }
+        { y: 2, color: 'rgba(239, 68, 68, 0.7)', label: 'Terremoti' },
+        { y: 10, color: 'rgba(245, 158, 11, 0.7)', label: 'Microsismi' },
+        { y: 30, color: 'rgba(16, 185, 129, 0.7)', label: 'Traffico' }
       ].map(s => ({
         type: 'line',
         x0: 0,
         x1: timePoints.length,
         y0: s.y,
         y1: s.y,
-        line: { color: s.color, width: 1, dash: 'dot' }
+        line: { color: s.color, width: 2, dash: 'dash' }
+      }));
+
+      // Aggiungi annotazioni per le bande
+      const annotations = [
+        { y: 1, text: '🌋 Sismi', color: '#ef4444' },
+        { y: 6, text: '📳 Micro', color: '#f59e0b' },
+        { y: 20, text: '🚛 Traffico', color: '#10b981' },
+        { y: 40, text: '⚙️ Macch.', color: '#3b82f6' }
+      ].map(a => ({
+        x: timePoints.length + 5,
+        y: a.y,
+        text: a.text,
+        showarrow: false,
+        font: { color: a.color, size: 10 },
+        xanchor: 'left'
       }));
 
       const layout = {
@@ -1317,9 +1364,12 @@
           ...darkTheme.yaxis,
           title: 'Frequenza (Hz)',
           showgrid: true,
-          gridcolor: 'rgba(45, 58, 79, 0.3)'
+          gridcolor: 'rgba(45, 58, 79, 0.3)',
+          range: [0, 50]
         },
-        shapes: shapes
+        shapes: shapes,
+        annotations: annotations,
+        margin: { ...darkTheme.margin, r: 80 }
       };
 
       Plotly.react('spectrogramChart', [trace], layout, { responsive: true, displayModeBar: false });
@@ -1329,8 +1379,8 @@
         const lastSpectrum = limitedData[limitedData.length - 1];
         const analysis = identifyEvent(limitedFreqs, lastSpectrum);
         
-        // Mostra evento solo se c'è energia significativa
-        if (analysis.totalEnergy > 0.001 && analysis.dominant) {
+        // Mostra evento solo se c'è energia significativa sopra la soglia
+        if (analysis.totalEnergy > noiseFloor * 10 && analysis.dominant) {
           const percentage = analysis.bands[analysis.dominant].percentage.toFixed(1);
           showEventDetection(analysis.dominant, `${percentage}% energia nella banda`);
         }
