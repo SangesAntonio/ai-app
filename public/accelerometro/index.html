@@ -3,339 +3,1290 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Dati Accelerometro</title>
+  <title>Sismografo Arcofelice - Dashboard</title>
 
   <!-- Plotly -->
-  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-  <!-- Bootstrap 5 CSS -->
-  <link
-    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
-    rel="stylesheet"
-  />
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <style>
-    body { font-family: Arial, sans-serif; background: #f4f4f4; }
-    header { background: #0077ff; color: white; padding: 1rem; text-align: center; }
-    main { padding: 1rem; }
-    #chart { background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); height: 60vh; }
-    .offline { color: red; text-align: center; font-weight: bold; margin-top: 1rem; display: none; }
-    .note { text-align: center; color: #555; margin: 1rem auto; max-width: 90%; }
+    :root {
+      --bg-primary: #0a0e17;
+      --bg-secondary: #111827;
+      --bg-card: #1a2235;
+      --bg-card-hover: #232d42;
+      --accent-blue: #3b82f6;
+      --accent-cyan: #06b6d4;
+      --accent-green: #10b981;
+      --accent-yellow: #f59e0b;
+      --accent-red: #ef4444;
+      --accent-purple: #8b5cf6;
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --border-color: #2d3a4f;
+      --glow-blue: rgba(59, 130, 246, 0.3);
+      --glow-cyan: rgba(6, 182, 212, 0.3);
+      --glow-green: rgba(16, 185, 129, 0.3);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Space Grotesk', sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Animated background grid */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-image: 
+        linear-gradient(rgba(59, 130, 246, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(59, 130, 246, 0.03) 1px, transparent 1px);
+      background-size: 50px 50px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Header */
+    header {
+      background: linear-gradient(180deg, var(--bg-secondary) 0%, transparent 100%);
+      border-bottom: 1px solid var(--border-color);
+      padding: 1rem 2rem;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(10px);
+    }
+
+    .header-content {
+      max-width: 1800px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .logo-icon {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      box-shadow: 0 0 20px var(--glow-cyan);
+      animation: pulse-glow 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 0 20px var(--glow-cyan); }
+      50% { box-shadow: 0 0 30px var(--glow-cyan), 0 0 40px var(--glow-blue); }
+    }
+
+    .logo-text h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      background: linear-gradient(90deg, var(--text-primary), var(--accent-cyan));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .logo-text span {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .header-controls {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .time-selector {
+      display: flex;
+      background: var(--bg-card);
+      border-radius: 10px;
+      padding: 4px;
+      border: 1px solid var(--border-color);
+    }
+
+    .time-btn {
+      padding: 0.5rem 1rem;
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      cursor: pointer;
+      border-radius: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      transition: all 0.2s ease;
+    }
+
+    .time-btn:hover {
+      color: var(--text-primary);
+    }
+
+    .time-btn.active {
+      background: var(--accent-blue);
+      color: white;
+      box-shadow: 0 0 15px var(--glow-blue);
+    }
+
+    .btn {
+      padding: 0.6rem 1.2rem;
+      border: 1px solid var(--border-color);
+      background: var(--bg-card);
+      color: var(--text-primary);
+      cursor: pointer;
+      border-radius: 10px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s ease;
+    }
+
+    .btn:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 15px var(--glow-blue);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+      border: none;
+    }
+
+    /* Status indicators */
+    .status-bar {
+      display: flex;
+      gap: 1.5rem;
+      align-items: center;
+    }
+
+    .status-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      animation: blink 1s ease-in-out infinite;
+    }
+
+    .status-dot.online {
+      background: var(--accent-green);
+      box-shadow: 0 0 10px var(--glow-green);
+    }
+
+    .status-dot.offline {
+      background: var(--accent-red);
+      animation: none;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    /* Main content */
+    main {
+      max-width: 1800px;
+      margin: 0 auto;
+      padding: 1.5rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Stats cards */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 1.25rem;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent-blue), var(--accent-cyan));
+    }
+
+    .stat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      border-color: var(--accent-blue);
+    }
+
+    .stat-card.alert::before {
+      background: linear-gradient(90deg, var(--accent-yellow), var(--accent-red));
+      animation: alert-pulse 1s ease-in-out infinite;
+    }
+
+    @keyframes alert-pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .stat-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 0.5rem;
+    }
+
+    .stat-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .stat-value.magnitude {
+      background: linear-gradient(90deg, var(--accent-cyan), var(--accent-green));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .stat-unit {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      margin-left: 0.25rem;
+    }
+
+    .stat-change {
+      font-size: 0.75rem;
+      margin-top: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    .stat-change.up { color: var(--accent-red); }
+    .stat-change.down { color: var(--accent-green); }
+    .stat-change.neutral { color: var(--text-muted); }
+
+    /* Charts grid */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+
+    @media (min-width: 1200px) {
+      .charts-grid {
+        grid-template-columns: 2fr 1fr;
+      }
+    }
+
+    .chart-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .chart-card:hover {
+      border-color: var(--accent-blue);
+    }
+
+    .chart-header {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .chart-title {
+      font-size: 1rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .chart-title-icon {
+      font-size: 1.2rem;
+    }
+
+    .chart-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .chart-btn {
+      padding: 0.4rem 0.8rem;
+      border: 1px solid var(--border-color);
+      background: transparent;
+      color: var(--text-secondary);
+      cursor: pointer;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      transition: all 0.2s ease;
+    }
+
+    .chart-btn:hover, .chart-btn.active {
+      background: var(--accent-blue);
+      color: white;
+      border-color: var(--accent-blue);
+    }
+
+    .chart-body {
+      padding: 0.5rem;
+      height: 350px;
+    }
+
+    .chart-body.tall {
+      height: 400px;
+    }
+
+    .chart-body.polar {
+      height: 350px;
+    }
+
+    /* Full width chart */
+    .chart-full {
+      grid-column: 1 / -1;
+    }
+
+    /* Secondary charts row */
+    .secondary-charts {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 1.5rem;
+      margin-top: 1.5rem;
+    }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(5px);
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      width: 100%;
+      max-width: 600px;
+      max-height: 80vh;
+      overflow: hidden;
+      animation: modal-in 0.3s ease;
+    }
+
+    @keyframes modal-in {
+      from { opacity: 0; transform: scale(0.95) translateY(20px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .modal-header {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-size: 1.5rem;
+      line-height: 1;
+      transition: color 0.2s;
+    }
+
+    .modal-close:hover {
+      color: var(--accent-red);
+    }
+
+    .modal-body {
+      padding: 1.5rem;
+      overflow-y: auto;
+      max-height: 60vh;
+    }
+
+    .event-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .event-item {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .event-item:hover {
+      border-color: var(--accent-blue);
+      background: var(--bg-card-hover);
+    }
+
+    .event-info h4 {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .event-info span {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .event-magnitude {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--accent-cyan);
+    }
+
+    /* Countdown */
+    .countdown {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .countdown-number {
+      color: var(--accent-cyan);
+      font-weight: 600;
+    }
+
+    /* Loading state */
+    .loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: var(--text-muted);
+    }
+
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--border-color);
+      border-top-color: var(--accent-blue);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Live indicator */
+    .live-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(239, 68, 68, 0.2);
+      color: var(--accent-red);
+      padding: 0.3rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .live-badge::before {
+      content: '';
+      width: 8px;
+      height: 8px;
+      background: var(--accent-red);
+      border-radius: 50%;
+      animation: live-pulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes live-pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.2); opacity: 0.7; }
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      header {
+        padding: 1rem;
+      }
+
+      .header-content {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .header-controls {
+        width: 100%;
+        justify-content: space-between;
+      }
+
+      .status-bar {
+        display: none;
+      }
+
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .stat-value {
+        font-size: 1.25rem;
+      }
+
+      .chart-body {
+        height: 280px;
+      }
+
+      .secondary-charts {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Plotly overrides */
+    .js-plotly-plot .plotly .modebar {
+      top: 5px !important;
+      right: 5px !important;
+    }
+
+    .js-plotly-plot .plotly .modebar-btn {
+      font-size: 14px !important;
+    }
   </style>
 </head>
 <body>
   <header>
-    <h1 id="pageTitle">Grafico Accelerometro (Arcofelice)</h1>
-    <p>Dati dal sensore aggiornati ogni 10 secondi</p>
-  </header>
+    <div class="header-content">
+      <div class="logo">
+        <div class="logo-icon">📊</div>
+        <div class="logo-text">
+          <h1>Sismografo Arcofelice</h1>
+          <span>ADXL355 High-Precision Accelerometer</span>
+        </div>
+      </div>
 
-  <main class="container">
-    <div class="row mb-3">
-      <div class="col text-center">
-        <label for="rangeSelector" class="form-label">Visualizza ultimi:</label>
-        <select id="rangeSelector" class="form-select d-inline-block w-auto">
-          <option value="1">1 minuto</option>
-          <option value="5" selected>5 minuti</option>
-          <option value="10">10 minuti</option>
-          <option value="20">20 minuti</option>
-          <option value="60">60 minuti</option>
-        </select>
-        <button id="openHistory" class="btn btn-success ms-3">
+      <div class="header-controls">
+        <div class="time-selector">
+          <button class="time-btn" data-minutes="1">1m</button>
+          <button class="time-btn" data-minutes="5">5m</button>
+          <button class="time-btn active" data-minutes="10">10m</button>
+          <button class="time-btn" data-minutes="30">30m</button>
+          <button class="time-btn" data-minutes="60">1h</button>
+        </div>
+
+        <button class="btn" id="openHistory">
           📜 Storico Eventi
         </button>
+
+        <button class="btn" id="openSettings">
+          ⚙️ Impostazioni
+        </button>
+      </div>
+
+      <div class="status-bar">
+        <div class="status-item">
+          <div class="status-dot online" id="statusDot"></div>
+          <span id="statusText">Online</span>
+        </div>
+        <div class="countdown">
+          🔄 Aggiornamento: <span class="countdown-number" id="countdown">4</span>s
+        </div>
+        <div class="live-badge">LIVE</div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Stats Cards -->
+    <div class="stats-grid">
+      <div class="stat-card" id="cardMagnitude">
+        <div class="stat-label">Accelerazione Attuale</div>
+        <div class="stat-value magnitude" id="currentMagnitude">0.000<span class="stat-unit">g</span></div>
+        <div class="stat-change neutral" id="magnitudeChange">— stabile</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-label">Picco Massimo (sessione)</div>
+        <div class="stat-value" id="peakValue">0.000<span class="stat-unit">g</span></div>
+        <div class="stat-change neutral" id="peakTime">—</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-label">Media X/Y</div>
+        <div class="stat-value" id="avgXY">0.000<span class="stat-unit">g</span></div>
+        <div class="stat-change neutral">Ultimi 100 campioni</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-label">Deviazione Standard</div>
+        <div class="stat-value" id="stdDev">0.000<span class="stat-unit">g</span></div>
+        <div class="stat-change neutral">Rumore di fondo</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-label">Campioni Ricevuti</div>
+        <div class="stat-value" id="sampleCount">0</div>
+        <div class="stat-change neutral" id="sampleRate">— campioni/sec</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-label">Ultima Lettura</div>
+        <div class="stat-value" style="font-size: 1rem;" id="lastTimestamp">--:--:--</div>
+        <div class="stat-change neutral" id="dataAge">—</div>
       </div>
     </div>
 
-    <div id="countdown" class="text-center mb-3">
-      🔄 Prossimo aggiornamento tra: <span id="seconds">10</span>s
+    <!-- Main Charts -->
+    <div class="charts-grid">
+      <div class="chart-card chart-full">
+        <div class="chart-header">
+          <div class="chart-title">
+            <span class="chart-title-icon">📈</span>
+            Accelerazione Real-Time (3 Assi)
+          </div>
+          <div class="chart-actions">
+            <button class="chart-btn active" data-axis="all">Tutti</button>
+            <button class="chart-btn" data-axis="xy">X/Y</button>
+            <button class="chart-btn" data-axis="z">Solo Z</button>
+          </div>
+        </div>
+        <div class="chart-body tall" id="mainChart"></div>
+      </div>
     </div>
 
-    <div id="chart"></div>
-    <div id="polarChart" style="height: 60vh; margin-top: 20px;"></div>
-    <div id="offlineAlert" class="offline">❌ Sensore offline - nessun dato recente ricevuto</div>
-    <div class="note">
-      Visualizzazione dinamica dei rilevamenti. Il grafico si aggiorna automaticamente ogni 10 secondi.
-    </div>
+    <!-- Secondary Charts -->
+    <div class="secondary-charts">
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">
+            <span class="chart-title-icon">🧭</span>
+            Direzione Onda
+          </div>
+        </div>
+        <div class="chart-body polar" id="polarChart"></div>
+      </div>
 
-    <div class="text-center mt-4">
-      <a href="javascript:history.back()" class="btn btn-primary me-2">⬅️ Visualizza terremoti</a>
-      <a href="inclinazione.html" class="btn btn-secondary">Visualizza livella</a>
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">
+            <span class="chart-title-icon">📊</span>
+            Magnitudo nel Tempo
+          </div>
+        </div>
+        <div class="chart-body" id="magnitudeChart"></div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">
+            <span class="chart-title-icon">🎯</span>
+            Distribuzione Accelerazione
+          </div>
+        </div>
+        <div class="chart-body" id="histogramChart"></div>
+      </div>
     </div>
   </main>
 
-  <!-- Modal Bootstrap 5 -->
-  <div
-    class="modal fade"
-    id="historyModal"
-    tabindex="-1"
-    aria-labelledby="historyModalLabel"
-    aria-hidden="true"
-  >
-    <div class="modal-dialog modal-dialog-scrollable">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="historyModalLabel">Storico Eventi</h5>
-          <button
-            type="button"
-            class="btn-close"
-            data-bs-dismiss="modal"
-            aria-label="Chiudi"
-          ></button>
-        </div>
-        <div class="modal-body">
-          <ul id="historyList" class="list-group">
-            <li class="list-group-item text-center">Caricamento…</li>
-          </ul>
+  <!-- History Modal -->
+  <div class="modal-overlay" id="historyModal">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">📜 Storico Eventi</div>
+        <button class="modal-close" id="closeHistory">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="event-list" id="eventList">
+          <div class="loading"><div class="loading-spinner"></div></div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Bootstrap 5 Bundle (Popper + JS) -->
-  <script
-    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
-  ></script>
+  <!-- Settings Modal -->
+  <div class="modal-overlay" id="settingsModal">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">⚙️ Impostazioni</div>
+        <button class="modal-close" id="closeSettings">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="color: var(--text-muted); text-align: center;">
+          Le soglie configurabili saranno disponibili prossimamente.
+        </p>
+      </div>
+    </div>
+  </div>
 
   <script>
-    let selectedMinutes = 5;
-    const amplificationFactor = 1;
+    // ============================================
+    // CONFIGURAZIONE
+    // ============================================
+    const API_BASE = 'https://www.mychartjourney.com/api';
+    const UPDATE_INTERVAL = 4000; // 4 secondi
+    
+    let selectedMinutes = 10;
     let realTimeInterval;
+    let countdownInterval;
+    let secondsLeft = 4;
+    let peakMagnitude = 0;
+    let peakTime = null;
+    let previousMagnitude = 0;
+    let isViewingHistory = false;
 
-    // 1) FUNZIONE DI PLOTTAGGIO REAL-TIME
-    async function fetchAndPlot() {
-      // reset titolo
-      document.getElementById('pageTitle').textContent = 
-        `Grafico Accelerometro (Arcofelice)`;
-
-      const url = "https://www.mychartjourney.com/api/dati.php?minuti=" + selectedMinutes;
-      const res = await fetch(url);
-      const data = await res.json();
-
-      const allTimestamps = Object.keys(data).sort();
-      const now = Date.now();
-      const rangeAgo = now - selectedMinutes * 60 * 1000;
-
-      let xNorm = [], yNorm = [], zAxis = [], xIndex = [];
-      let magnitudes = [], angles = [];
-      let idx = 0;
-
-      for (let key of allTimestamps) {
-        const batch = data[key];
-        if (!batch?.letture || !batch.end_timestamp) continue;
-        const batchTime = new Date(batch.end_timestamp).getTime();
-        if (batchTime < rangeAgo) continue;
-        for (let p of batch.letture) {
-          xNorm.push(p.x * amplificationFactor);
-          yNorm.push(p.y * amplificationFactor);
-          zAxis.push(p.z);
-          xIndex.push(idx++);
-
-          // Calculate magnitude and angle for polar chart
-          const magnitude = Math.sqrt(p.x * p.x + p.y * p.y);
-          // atan2(y, x) gives angle in radians from positive x-axis
-          // We need to map this to our coordinate system: Y=South, X=West
-          // atan2(y, x) -> angle from positive x (East)
-          // We want angle from South (positive y)
-          // Angle from South = atan2(x, y)
-          const angleRadians = Math.atan2(p.x, p.y); // Angle from positive Y (South)
-          const angleDegrees = angleRadians * (180 / Math.PI);
-          magnitudes.push(magnitude);
-          angles.push(angleDegrees);
-        }
+    // Plotly layout comuni
+    const darkTheme = {
+      paper_bgcolor: 'rgba(0,0,0,0)',
+      plot_bgcolor: 'rgba(0,0,0,0)',
+      font: { family: 'JetBrains Mono, monospace', color: '#94a3b8', size: 11 },
+      margin: { t: 30, r: 20, b: 40, l: 50 },
+      xaxis: {
+        gridcolor: 'rgba(45, 58, 79, 0.5)',
+        zerolinecolor: 'rgba(45, 58, 79, 0.8)',
+        tickfont: { size: 10 }
+      },
+      yaxis: {
+        gridcolor: 'rgba(45, 58, 79, 0.5)',
+        zerolinecolor: 'rgba(45, 58, 79, 0.8)',
+        tickfont: { size: 10 }
       }
+    };
+
+    const traceColors = {
+      x: '#3b82f6', // blue
+      y: '#10b981', // green
+      z: '#f59e0b', // yellow
+      magnitude: '#06b6d4' // cyan
+    };
+
+    // ============================================
+    // FUNZIONI UTILITY
+    // ============================================
+    function formatTime(date) {
+      return date.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    }
+
+    function calculateMagnitude(x, y) {
+      return Math.sqrt(x * x + y * y);
+    }
+
+    function calculateStats(values) {
+      if (values.length === 0) return { mean: 0, std: 0 };
+      const mean = values.reduce((a, b) => a + b, 0) / values.length;
+      const squaredDiffs = values.map(v => Math.pow(v - mean, 2));
+      const std = Math.sqrt(squaredDiffs.reduce((a, b) => a + b, 0) / values.length);
+      return { mean, std };
+    }
+
+    // ============================================
+    // FETCH E PLOT DATI REAL-TIME
+    // ============================================
+    async function fetchAndPlot() {
+      if (isViewingHistory) return;
+
+      try {
+        const url = `${API_BASE}/dati.php?minuti=${selectedMinutes}`;
+        const res = await fetch(url);
+        const data = await res.json();
+
+        const allTimestamps = Object.keys(data).sort();
+        const now = Date.now();
+        const rangeAgo = now - selectedMinutes * 60 * 1000;
+
+        let xData = [], yData = [], zData = [], timeLabels = [];
+        let magnitudes = [], angles = [];
+        let allMagnitudes = [];
+
+        for (let key of allTimestamps) {
+          const batch = data[key];
+          if (!batch?.letture || !batch.end_timestamp) continue;
+          
+          const batchTime = new Date(batch.end_timestamp).getTime();
+          if (batchTime < rangeAgo) continue;
+
+          for (let p of batch.letture) {
+            xData.push(p.x);
+            yData.push(p.y);
+            zData.push(p.z);
+            timeLabels.push(batch.end_timestamp);
+
+            const mag = calculateMagnitude(p.x, p.y);
+            magnitudes.push(mag);
+            allMagnitudes.push(mag);
+
+            const angle = Math.atan2(p.y, p.x) * (180 / Math.PI);
+            angles.push(angle);
+          }
+        }
+
+        if (xData.length === 0) {
+          updateStatus(false);
+          return;
+        }
+
+        updateStatus(true);
+
+        // Aggiorna statistiche
+        const currentMag = magnitudes[magnitudes.length - 1] || 0;
+        updateStats(xData, yData, magnitudes, currentMag, allTimestamps[allTimestamps.length - 1]);
+
+        // Plot principale
+        plotMainChart(xData, yData, zData);
+
+        // Plot polare
+        plotPolarChart(magnitudes.slice(-200), angles.slice(-200));
+
+        // Plot magnitudo
+        plotMagnitudeChart(magnitudes);
+
+        // Plot istogramma
+        plotHistogram(allMagnitudes);
+
+      } catch (error) {
+        console.error('Errore fetch dati:', error);
+        updateStatus(false);
+      }
+    }
+
+    function updateStatus(online) {
+      const dot = document.getElementById('statusDot');
+      const text = document.getElementById('statusText');
+      
+      if (online) {
+        dot.className = 'status-dot online';
+        text.textContent = 'Online';
+      } else {
+        dot.className = 'status-dot offline';
+        text.textContent = 'Offline';
+      }
+    }
+
+    function updateStats(xData, yData, magnitudes, currentMag, lastTs) {
+      // Magnitudo corrente
+      document.getElementById('currentMagnitude').innerHTML = 
+        `${currentMag.toFixed(4)}<span class="stat-unit">g</span>`;
+
+      // Variazione
+      const change = currentMag - previousMagnitude;
+      const changeEl = document.getElementById('magnitudeChange');
+      if (Math.abs(change) < 0.001) {
+        changeEl.className = 'stat-change neutral';
+        changeEl.textContent = '— stabile';
+      } else if (change > 0) {
+        changeEl.className = 'stat-change up';
+        changeEl.textContent = `↑ +${change.toFixed(4)}g`;
+      } else {
+        changeEl.className = 'stat-change down';
+        changeEl.textContent = `↓ ${change.toFixed(4)}g`;
+      }
+      previousMagnitude = currentMag;
+
+      // Alert se supera soglia
+      const card = document.getElementById('cardMagnitude');
+      if (currentMag > 0.1) {
+        card.classList.add('alert');
+      } else {
+        card.classList.remove('alert');
+      }
+
+      // Picco
+      if (currentMag > peakMagnitude) {
+        peakMagnitude = currentMag;
+        peakTime = new Date();
+        document.getElementById('peakValue').innerHTML = 
+          `${peakMagnitude.toFixed(4)}<span class="stat-unit">g</span>`;
+        document.getElementById('peakTime').textContent = 
+          `alle ${formatTime(peakTime)}`;
+      }
+
+      // Media
+      const last100 = magnitudes.slice(-100);
+      const stats = calculateStats(last100);
+      document.getElementById('avgXY').innerHTML = 
+        `${stats.mean.toFixed(4)}<span class="stat-unit">g</span>`;
+      document.getElementById('stdDev').innerHTML = 
+        `${stats.std.toFixed(5)}<span class="stat-unit">g</span>`;
+
+      // Campioni
+      document.getElementById('sampleCount').textContent = magnitudes.length.toLocaleString();
+      document.getElementById('sampleRate').textContent = 
+        `~${Math.round(magnitudes.length / (selectedMinutes * 60) * 10) / 10} campioni/sec`;
+
+      // Timestamp
+      if (lastTs) {
+        const ts = new Date(lastTs);
+        document.getElementById('lastTimestamp').textContent = formatTime(ts);
+        const age = Math.round((Date.now() - ts.getTime()) / 1000);
+        document.getElementById('dataAge').textContent = 
+          age < 60 ? `${age}s fa` : `${Math.round(age/60)}m fa`;
+      }
+    }
+
+    // ============================================
+    // GRAFICI
+    // ============================================
+    function plotMainChart(xData, yData, zData) {
+      const indices = xData.map((_, i) => i);
+
+      const traces = [
+        {
+          x: indices,
+          y: xData,
+          type: 'scatter',
+          mode: 'lines',
+          name: 'Asse X',
+          line: { color: traceColors.x, width: 1.5 }
+        },
+        {
+          x: indices,
+          y: yData,
+          type: 'scatter',
+          mode: 'lines',
+          name: 'Asse Y',
+          line: { color: traceColors.y, width: 1.5 }
+        },
+        {
+          x: indices,
+          y: zData,
+          type: 'scatter',
+          mode: 'lines',
+          name: 'Asse Z',
+          line: { color: traceColors.z, width: 1.5 }
+        }
+      ];
 
       const layout = {
-        title: `Accelerazione ultimi ${selectedMinutes} min`,
-        xaxis: { title: "Campione #" },
-        yaxis: { title: "Valore (g)", autorange: false, range: [-3, 3] },
-        margin: { t: 80, l: 50, r: 10, b: 50 }
-      };
-      const traces = [
-        { x: xIndex, y: xNorm, mode: 'lines', name: 'X' },
-        { x: xIndex, y: yNorm, mode: 'lines', name: 'Y' },
-        { x: xIndex, y: zAxis, mode: 'lines', name: 'Z' }
-      ];
-      Plotly.newPlot('chart', traces, layout, {responsive: true});
-
-      // Plot Polar Chart
-      const polarLayout = {
-        title: `Direzione Accelerazione Orizzontale ultimi ${selectedMinutes} min`,
-        polar: {
-          radialaxis: {
-            visible: true,
-            range: [0, Math.max(...magnitudes) * 1.1] // Adjust range based on max magnitude
-          },
-          angularaxis: {
-            direction: "clockwise",
-            thetazero: 0, // 0 degrees at the top (North)
-            rotation: 180, // Rotate to have South at the top
-            tickvals: [0, 45, 90, 135, 180, 225, 270, 315],
-            ticktext: ['S', 'SE', 'E', 'NE', 'N', 'NW', 'W', 'SW']
-          }
+        ...darkTheme,
+        showlegend: true,
+        legend: { 
+          orientation: 'h', 
+          y: 1.12,
+          font: { size: 11 }
         },
-        margin: { t: 80, l: 50, r: 50, b: 50 }
+        xaxis: { 
+          ...darkTheme.xaxis, 
+          title: 'Campione #',
+          showgrid: true
+        },
+        yaxis: { 
+          ...darkTheme.yaxis, 
+          title: 'Accelerazione (g)',
+          range: [-0.5, 1.5]
+        },
+        hovermode: 'x unified'
       };
 
-      const polarTraces = [{
+      Plotly.react('mainChart', traces, layout, { responsive: true, displayModeBar: false });
+    }
+
+    function plotPolarChart(magnitudes, angles) {
+      const trace = {
         r: magnitudes,
         theta: angles,
-        mode: 'markers',
         type: 'scatterpolar',
-        name: 'Direzione',
+        mode: 'markers',
         marker: {
-          size: 5
+          color: magnitudes,
+          colorscale: [[0, '#10b981'], [0.5, '#06b6d4'], [1, '#ef4444']],
+          size: 5,
+          opacity: 0.7
+        },
+        name: 'Direzione'
+      };
+
+      const layout = {
+        ...darkTheme,
+        polar: {
+          bgcolor: 'rgba(0,0,0,0)',
+          radialaxis: {
+            visible: true,
+            range: [0, Math.max(...magnitudes) * 1.2 || 0.1],
+            gridcolor: 'rgba(45, 58, 79, 0.5)',
+            tickfont: { size: 9, color: '#64748b' }
+          },
+          angularaxis: {
+            direction: 'clockwise',
+            rotation: 90,
+            gridcolor: 'rgba(45, 58, 79, 0.5)',
+            tickfont: { size: 10, color: '#94a3b8' }
+          }
+        },
+        showlegend: false
+      };
+
+      Plotly.react('polarChart', [trace], layout, { responsive: true, displayModeBar: false });
+    }
+
+    function plotMagnitudeChart(magnitudes) {
+      const indices = magnitudes.map((_, i) => i);
+
+      const trace = {
+        x: indices,
+        y: magnitudes,
+        type: 'scatter',
+        mode: 'lines',
+        fill: 'tozeroy',
+        line: { color: traceColors.magnitude, width: 1.5 },
+        fillcolor: 'rgba(6, 182, 212, 0.2)'
+      };
+
+      const layout = {
+        ...darkTheme,
+        xaxis: { ...darkTheme.xaxis, title: 'Campione', showgrid: false },
+        yaxis: { ...darkTheme.yaxis, title: 'Magnitudo (g)' },
+        showlegend: false
+      };
+
+      Plotly.react('magnitudeChart', [trace], layout, { responsive: true, displayModeBar: false });
+    }
+
+    function plotHistogram(magnitudes) {
+      const trace = {
+        x: magnitudes,
+        type: 'histogram',
+        nbinsx: 50,
+        marker: {
+          color: 'rgba(59, 130, 246, 0.7)',
+          line: { color: '#3b82f6', width: 1 }
         }
-      }];
+      };
 
-      Plotly.newPlot('polarChart', polarTraces, polarLayout);
+      const layout = {
+        ...darkTheme,
+        xaxis: { ...darkTheme.xaxis, title: 'Magnitudo (g)' },
+        yaxis: { ...darkTheme.yaxis, title: 'Frequenza' },
+        showlegend: false,
+        bargap: 0.05
+      };
+
+      Plotly.react('histogramChart', [trace], layout, { responsive: true, displayModeBar: false });
     }
 
-    // 2) FUNZIONE DI PLOTTAGGIO STORICO
-    async function loadEventChart(idEvento) {
-  clearInterval(realTimeInterval);
-  document.getElementById('pageTitle').textContent =
-    `Storico Evento: ${idEvento}`;
+    // ============================================
+    // STORICO EVENTI
+    // ============================================
+    async function loadEventList() {
+      const list = document.getElementById('eventList');
+      list.innerHTML = '<div class="loading"><div class="loading-spinner"></div></div>';
 
-  const res  = await fetch(
-    `https://www.mychartjourney.com/api/eventiS.php?id_evento=${encodeURIComponent(idEvento)}`
-  );
-  const rows = await res.json(); // [{timestamp,x,y,z,important}, ...]
+      try {
+        const res = await fetch(`${API_BASE}/eventiS.php`);
+        const events = await res.json();
 
-  // 1) Costruiamo gli indici per l'asse X
-  const xIndex   = rows.map((_, i) => i);
-  const xNorm    = rows.map(r => r.x * amplificationFactor);
-  const yNorm    = rows.map(r => r.y * amplificationFactor);
-  const zAxis    = rows.map(r => r.z);
-  const tooltips = rows.map(r => r.timestamp);
+        if (events.length === 0) {
+          list.innerHTML = '<p style="text-align: center; color: var(--text-muted);">Nessun evento registrato</p>';
+          return;
+        }
 
-  // Calculate magnitude and angle for polar chart
-  const magnitudes = rows.map(r => Math.sqrt(r.x * r.x + r.y * r.y));
-  // atan2(y, x) gives angle in radians from positive x-axis
-  // We need to map this to our coordinate system: Y=South, X=West
-  // atan2(y, x) -> angle from positive x (East)
-  // We want angle from South (positive y)
-  // Angle from South = atan2(x, y)
-  const angles = rows.map(r => Math.atan2(r.x, r.y) * (180 / Math.PI)); // Angle from positive Y (South) in degrees
+        list.innerHTML = events.map(evt => `
+          <div class="event-item" data-id="${evt.id_evento}">
+            <div class="event-info">
+              <h4>${evt.id_evento}</h4>
+              <span>${evt.data_inizio}</span>
+            </div>
+            <div class="event-magnitude">→</div>
+          </div>
+        `).join('');
 
-
-  const layout = {
-    title: `Dati Evento ${idEvento}`,
-    xaxis: {
-      title: "Campione #",
-      tickmode: 'linear'
-    },
-    yaxis: { title: "Valore (g)" },
-    margin: { t: 80, l: 50, r: 10, b: 50 }
-  };
-
-  const traces = [
-    {
-      x: xIndex, y: xNorm, mode: 'lines', name: 'X',
-      hovertemplate: 'Value: %{y}<extra></extra>'
-    },
-    {
-      x: xIndex, y: yNorm, mode: 'lines', name: 'Y',
-      hovertemplate: 'Value: %{y}<extra></extra>'
-    },
-    {
-      x: xIndex, y: zAxis, mode: 'lines', name: 'Z',
-      hovertemplate: 'Value: %{y}<extra></extra>'
-    }
-  ];
-
-  Plotly.newPlot('chart', traces, layout, { responsive: true });
-
-  // Plot Polar Chart for historical data
-  const polarLayout = {
-    title: `Direzione Accelerazione Orizzontale Evento ${idEvento}`,
-    polar: {
-      radialaxis: {
-        visible: true,
-        range: [0, Math.max(...magnitudes) * 1.1] // Adjust range based on max magnitude
-      },
-      angularaxis: {
-        direction: "clockwise",
-        thetazero: 0, // 0 degrees at the top (North)
-        rotation: 180, // Rotate to have South at the top
-        tickvals: [0, 45, 90, 135, 180, 225, 270, 315],
-        ticktext: ['S', 'SE', 'E', 'NE', 'N', 'NW', 'W', 'SW']
-      }
-    },
-    margin: { t: 80, l: 50, r: 50, b: 50 }
-  };
-
-  const polarTraces = [{
-    r: magnitudes,
-    theta: angles,
-    mode: 'markers',
-    type: 'scatterpolar',
-    name: 'Direzione',
-    marker: {
-      size: 5
-    }
-  }];
-
-  Plotly.newPlot('polarChart', polarTraces, polarLayout);
-}
-
-
-    // 3) INIZIALIZZA REAL-TIME
-    document.getElementById('rangeSelector')
-      .addEventListener('change', e => {
-        selectedMinutes = +e.target.value;
-        fetchAndPlot();
-      });
-    fetchAndPlot();
-    realTimeInterval = setInterval(fetchAndPlot, 10000);
-
-    // 4) STORICO EVENTI
-    const fakeApi = 'https://www.mychartjourney.com/api/eventiS.php';
-    const historyModalEl = document.getElementById('historyModal');
-    const historyListEl  = document.getElementById('historyList');
-    const historyModal   = new bootstrap.Modal(historyModalEl);
-
-    document.getElementById('openHistory')
-      .addEventListener('click', () => historyModal.show());
-
-      historyModalEl.addEventListener('show.bs.modal', async () => {
-        historyListEl.innerHTML = '<li class="list-group-item text-center">Caricamento…</li>';
-        try {
-          const res    = await fetch(fakeApi);
-          const events = await res.json(); // ora è [{id_evento, data_inizio}, …]
-          historyListEl.innerHTML = '';
-
-          events.forEach(evt => {
-            const li = document.createElement('li');
-            li.className = 'list-group-item d-flex justify-content-between align-items-center';
-            // Formatto la data (solo YYYY-MM-DD)
-            const date = evt.data_inizio.split(' ')[0];
-            li.innerHTML = `
-              <div>
-                <strong>${evt.id_evento}</strong><br>
-                <small class="text-muted">${date}</small>
-              </div>
-            `;
-            const btn = document.createElement('button');
-            btn.className = 'btn btn-sm btn-outline-primary';
-            btn.textContent = 'Apri';
-            btn.onclick = () => {
-              loadEventChart(evt.id_evento);
-              historyModal.hide();
-            };
-            li.appendChild(btn);
-            historyListEl.appendChild(li);
+        // Click handler
+        list.querySelectorAll('.event-item').forEach(item => {
+          item.addEventListener('click', () => {
+            loadEventChart(item.dataset.id);
+            closeModal('historyModal');
           });
-        } catch (err) {
-          historyListEl.innerHTML = '<li class="list-group-item text-danger text-center">Errore caricamento</li>';
-          console.error(err);
+        });
+
+      } catch (error) {
+        list.innerHTML = '<p style="text-align: center; color: var(--accent-red);">Errore caricamento eventi</p>';
+      }
+    }
+
+    async function loadEventChart(idEvento) {
+      isViewingHistory = true;
+      clearInterval(realTimeInterval);
+
+      try {
+        const res = await fetch(`${API_BASE}/eventiS.php?id_evento=${encodeURIComponent(idEvento)}`);
+        const rows = await res.json();
+
+        const xData = rows.map(r => r.x);
+        const yData = rows.map(r => r.y);
+        const zData = rows.map(r => r.z);
+        const magnitudes = rows.map(r => calculateMagnitude(r.x, r.y));
+        const angles = rows.map(r => Math.atan2(r.y, r.x) * (180 / Math.PI));
+
+        // Update title
+        document.querySelector('.logo-text h1').textContent = `Evento: ${idEvento}`;
+
+        // Plot
+        plotMainChart(xData, yData, zData);
+        plotPolarChart(magnitudes, angles);
+        plotMagnitudeChart(magnitudes);
+        plotHistogram(magnitudes);
+
+        // Add back button
+        const header = document.querySelector('.chart-header .chart-actions');
+        if (!document.getElementById('backToLive')) {
+          const btn = document.createElement('button');
+          btn.id = 'backToLive';
+          btn.className = 'chart-btn';
+          btn.textContent = '← Torna Live';
+          btn.onclick = backToLive;
+          header.prepend(btn);
         }
+
+      } catch (error) {
+        console.error('Errore caricamento evento:', error);
+      }
+    }
+
+    function backToLive() {
+      isViewingHistory = false;
+      document.querySelector('.logo-text h1').textContent = 'Sismografo Arcofelice';
+      const btn = document.getElementById('backToLive');
+      if (btn) btn.remove();
+      
+      fetchAndPlot();
+      realTimeInterval = setInterval(fetchAndPlot, UPDATE_INTERVAL);
+    }
+
+    // ============================================
+    // MODAL HANDLERS
+    // ============================================
+    function openModal(id) {
+      document.getElementById(id).classList.add('active');
+      if (id === 'historyModal') loadEventList();
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('active');
+    }
+
+    // ============================================
+    // EVENT LISTENERS
+    // ============================================
+    document.addEventListener('DOMContentLoaded', () => {
+      // Time selector
+      document.querySelectorAll('.time-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          selectedMinutes = parseInt(btn.dataset.minutes);
+          fetchAndPlot();
+        });
       });
 
-    // 5) COUNTDOWN
-    let secondsLeft = 10;
-    setInterval(() => {
-      secondsLeft = secondsLeft > 1 ? secondsLeft - 1 : 10;
-      document.getElementById('seconds').textContent = secondsLeft;
-    }, 1000);
+      // Modal buttons
+      document.getElementById('openHistory').addEventListener('click', () => openModal('historyModal'));
+      document.getElementById('closeHistory').addEventListener('click', () => closeModal('historyModal'));
+      document.getElementById('openSettings').addEventListener('click', () => openModal('settingsModal'));
+      document.getElementById('closeSettings').addEventListener('click', () => closeModal('settingsModal'));
+
+      // Close modal on overlay click
+      document.querySelectorAll('.modal-overlay').forEach(overlay => {
+        overlay.addEventListener('click', (e) => {
+          if (e.target === overlay) closeModal(overlay.id);
+        });
+      });
+
+      // Axis filter buttons
+      document.querySelectorAll('.chart-actions .chart-btn[data-axis]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          // TODO: implement axis filtering
+          document.querySelectorAll('.chart-actions .chart-btn[data-axis]').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+        });
+      });
+
+      // Countdown
+      countdownInterval = setInterval(() => {
+        secondsLeft = secondsLeft > 1 ? secondsLeft - 1 : 4;
+        document.getElementById('countdown').textContent = secondsLeft;
+      }, 1000);
+
+      // Initial fetch
+      fetchAndPlot();
+      realTimeInterval = setInterval(fetchAndPlot, UPDATE_INTERVAL);
+    });
   </script>
 </body>
 </html>
